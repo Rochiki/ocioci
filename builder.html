@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f3d2e">
+  <title>Builder — Studio SCORM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <script src="jszip.min.js"></script>
+  <script type="module" src="builder.js"></script>
+</head>
+<body class="is-builder">
+  <header class="topbar">
+    <a class="brand" href="index.html" aria-label="Studio SCORM — beranda"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span class="brand-name">Studio SCORM</span></a>
+    <nav class="topnav" aria-label="Menu utama">
+      <a href="builder.html" aria-current="page">Builder</a>
+      <a href="player.html">Player</a>
+    </nav>
+    <span class="spacer"></span>
+    <small id="saveState" class="save-state" aria-live="polite"></small>
+    <button id="btnPreviewFull" class="btn btn-ghost-light" type="button"><span class="ic-slot" data-icon="play"></span><span class="hide-sm">Coba di Player</span></button>
+    <button id="btnBuild" class="btn btn-signal" type="button"><span class="ic-slot" data-icon="download"></span><span>Unduh SCORM</span></button>
+  </header>
+
+  <div class="builder" id="builder" data-view="edit">
+    <aside class="pane pane-slides" aria-label="Daftar slide">
+      <div class="pane-head">
+        <h2>Slide <span id="slideCount" class="count-pill">0</span></h2>
+        <button id="btnAdd" class="btn btn-primary btn-sm" type="button"><span class="ic-slot" data-icon="plus"></span>Tambah</button>
+      </div>
+      <ol id="slideList" class="slide-list"></ol>
+      <button id="btnImport" class="import-cta" type="button">
+        <span class="ic-slot" data-icon="upload"></span>
+        <span><b>Impor file</b><small>PowerPoint, PDF, Word, gambar, video, HTML</small></span>
+      </button>
+    </aside>
+
+    <main class="pane pane-edit" id="paneEdit" aria-label="Penyunting slide">
+      <div id="editor"></div>
+    </main>
+
+    <aside class="pane pane-side" aria-label="Pratinjau dan pengaturan">
+      <div class="tabs" role="tablist" aria-label="Panel samping">
+        <button role="tab" data-tab="lihat" aria-selected="true"><span class="ic-slot" data-icon="eye"></span>Lihat</button>
+        <button role="tab" data-tab="gaya" aria-selected="false"><span class="ic-slot" data-icon="palette"></span>Gaya</button>
+        <button role="tab" data-tab="atur" aria-selected="false"><span class="ic-slot" data-icon="settings"></span>Atur</button>
+        <button role="tab" data-tab="suara" aria-selected="false"><span class="ic-slot" data-icon="sound"></span>Suara</button>
+      </div>
+      <section class="tab-panel" data-panel="lihat">
+        <div class="preview-tools">
+          <div class="segmented" role="radiogroup" aria-label="Ukuran layar pratinjau">
+            <label><input type="radio" name="dev" value="hp" checked><span><span class="ic-slot" data-icon="phone"></span>HP</span></label>
+            <label><input type="radio" name="dev" value="laptop"><span><span class="ic-slot" data-icon="laptop"></span>Laptop</span></label>
+          </div>
+          <label class="chk"><input type="checkbox" id="pvCover"> Halaman sampul</label>
+        </div>
+        <div class="preview-stage" id="pvStage">
+          <div class="device" id="pvDevice"><iframe id="pvFrame" title="Pratinjau slide" src="preview.html"></iframe></div>
+        </div>
+        <p class="hint center">Pratinjau langsung — coba klik kuis, kartu, atau titik di sini.</p>
+      </section>
+      <section class="tab-panel" data-panel="gaya" hidden></section>
+      <section class="tab-panel" data-panel="atur" hidden></section>
+      <section class="tab-panel" data-panel="suara" hidden></section>
+    </aside>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Bagian Builder">
+    <button data-view="slides"><span class="ic-slot" data-icon="list"></span>Slide</button>
+    <button data-view="edit" aria-current="true"><span class="ic-slot" data-icon="edit"></span>Edit</button>
+    <button data-view="lihat"><span class="ic-slot" data-icon="eye"></span>Lihat</button>
+    <button data-view="atur"><span class="ic-slot" data-icon="settings"></span>Atur</button>
+  </nav>
+
+  <div class="drop-overlay" id="dropOverlay" hidden><div><span class="ic-slot" data-icon="upload"></span><b>Lepaskan untuk mengimpor</b><small>PowerPoint, PDF, Word, gambar, video, HTML, ZIP</small></div></div>
+</body>
+</html>

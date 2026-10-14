@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f3d2e">
+  <title>Studio SCORM — buat & putar e-learning SCORM</title>
+  <meta name="description" content="Aplikasi open-source berbahasa Indonesia untuk membuat kursus SCORM interaktif (materi, video, kuis, kartu balik, cari bahaya) dengan narasi suara, dan memutar paket SCORM di browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <script type="module">
+    import { icon } from './ui.js';
+    document.querySelectorAll('.ic-slot[data-icon]').forEach((el) => el.replaceWith(icon(el.dataset.icon)));
+  </script>
+</head>
+<body class="home">
+  <header class="topbar">
+    <a class="brand" href="index.html" aria-label="Studio SCORM — beranda"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span class="brand-name">Studio SCORM</span></a>
+    <nav class="topnav" aria-label="Menu utama">
+      <a href="builder.html">Builder</a>
+      <a href="player.html">Player</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div>
+        <h1>Materi K3 jadi kursus <span class="hl">interaktif</span>, siap masuk LMS.</h1>
+        <p class="lead">Impor PowerPoint atau PDF, tambahkan video, kuis, kartu balik, dan permainan "cari bahaya", beri narasi suara — lalu unduh sebagai paket SCORM untuk Moodle atau LMS lain. Gratis, berjalan di browser.</p>
+        <div class="row">
+          <a class="btn btn-signal" href="builder.html"><span class="ic-slot" data-icon="sparkle"></span>Buat kursus</a>
+          <a class="btn btn-ghost-light" href="player.html"><span class="ic-slot" data-icon="play"></span>Putar file SCORM</a>
+        </div>
+      </div>
+      <div class="fan" aria-hidden="true">
+        <div class="fan-card" style="--tc:var(--t-content);--r:-16deg;--x:-120px;--y:20px;--d:.05s"><span class="type-icon"><span class="ic-slot" data-icon="content"></span></span><b>Materi</b><small>Teks + gambar</small><span class="bars"><i></i><i></i><i style="width:60%"></i></span></div>
+        <div class="fan-card" style="--tc:var(--t-video);--r:-7deg;--x:-55px;--y:-30px;--d:.12s"><span class="type-icon"><span class="ic-slot" data-icon="video"></span></span><b>Video</b><small>MP4 atau YouTube</small><span class="bars"><i></i><i></i></span></div>
+        <div class="fan-card" style="--tc:var(--t-hotspot);--r:3deg;--x:10px;--y:-55px;--d:.19s"><span class="type-icon"><span class="ic-slot" data-icon="hotspot"></span></span><b>Cari bahaya</b><small>Ketuk kondisi tidak aman</small><span class="bars"><i></i><i style="width:70%"></i></span></div>
+        <div class="fan-card" style="--tc:var(--t-flip);--r:11deg;--x:80px;--y:-20px;--d:.26s"><span class="type-icon"><span class="ic-slot" data-icon="flip"></span></span><b>Kartu balik</b><small>Istilah & penjelasan</small><span class="bars"><i></i><i></i></span></div>
+        <div class="fan-card" style="--tc:var(--t-quiz);--r:20deg;--x:140px;--y:40px;--d:.33s"><span class="type-icon"><span class="ic-slot" data-icon="quiz"></span></span><b>Kuis</b><small>Nilai otomatis ke LMS</small><span class="bars"><i></i><i style="width:50%"></i></span></div>
+      </div>
+    </div>
+  </section>
+
+  <main class="home-section">
+    <div class="feature-grid lift">
+      <div class="feature" style="--tc:var(--t-content)"><span class="type-icon"><span class="ic-slot" data-icon="content"></span></span><b>Materi</b><small>4 tata letak teks & gambar</small></div>
+      <div class="feature" style="--tc:var(--t-image)"><span class="type-icon"><span class="ic-slot" data-icon="image"></span></span><b>Gambar / GIF</b><small>Infografis & animasi</small></div>
+      <div class="feature" style="--tc:var(--t-video)"><span class="type-icon"><span class="ic-slot" data-icon="video"></span></span><b>Video</b><small>Bisa wajib ditonton habis</small></div>
+      <div class="feature" style="--tc:var(--t-html)"><span class="type-icon"><span class="ic-slot" data-icon="html"></span></span><b>HTML / Embed</b><small>File, mini-website, Canva, Genially</small></div>
+      <div class="feature" style="--tc:var(--t-flip)"><span class="type-icon"><span class="ic-slot" data-icon="flip"></span></span><b>Kartu balik</b><small>Belajar istilah dengan seru</small></div>
+      <div class="feature" style="--tc:var(--t-hotspot)"><span class="type-icon"><span class="ic-slot" data-icon="hotspot"></span></span><b>Gambar interaktif</b><small>Titik info atau cari bahaya</small></div>
+      <div class="feature" style="--tc:var(--t-quiz)"><span class="type-icon"><span class="ic-slot" data-icon="quiz"></span></span><b>Kuis</b><small>Pilihan ganda, multi, benar/salah</small></div>
+      <div class="feature" style="--tc:var(--t-sort)"><span class="type-icon"><span class="ic-slot" data-icon="sort"></span></span><b>Urutkan langkah</b><small>Cocok untuk prosedur & LOTO</small></div>
+    </div>
+
+    <div class="strip">
+      <b>Impor dari:</b>
+      <span class="pill"><span class="ic-slot" data-icon="ppt"></span>PowerPoint (.pptx)</span>
+      <span class="pill"><span class="ic-slot" data-icon="pdf"></span>PDF</span>
+      <span class="pill"><span class="ic-slot" data-icon="word"></span>Word (.docx)</span>
+      <span class="pill"><span class="ic-slot" data-icon="image"></span>Gambar & GIF</span>
+      <span class="pill"><span class="ic-slot" data-icon="video"></span>Video</span>
+      <span class="pill"><span class="ic-slot" data-icon="zip"></span>HTML & ZIP</span>
+    </div>
+
+    <h2 class="big">Tiga langkah</h2>
+    <ol class="how">
+      <li><b>Susun atau impor materi</b><p class="muted">Tambah slide dari 8 jenis, atau impor file yang sudah ada. Lihat hasilnya langsung di pratinjau HP/laptop.</p></li>
+      <li><b>Beri suara & gaya</b><p class="muted">Pilih tema warna, logo, sampul. Narasi bisa suara perangkat, rekaman sendiri, atau MP3 suara natural.</p></li>
+      <li><b>Unduh paket SCORM</b><p class="muted">SCORM 1.2 atau 2004 — nilai, status lulus, dan jawaban kuis tercatat di LMS. Ada sertifikat di akhir.</p></li>
+    </ol>
+    <p class="foot">Studio SCORM — open source (MIT). Semua file diproses di browser Anda; proyek tersimpan di perangkat ini, bukan di server.</p>
+  </main>
+</body>
+</html>

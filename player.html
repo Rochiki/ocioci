@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f3d2e">
+  <title>Player SCORM — Studio SCORM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <script src="jszip.min.js"></script>
+  <script type="module" src="player.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html" aria-label="Studio SCORM — beranda"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span class="brand-name">Studio SCORM</span></a>
+    <nav class="topnav" aria-label="Menu utama">
+      <a href="builder.html">Builder</a>
+      <a href="player.html" aria-current="page">Player</a>
+    </nav>
+    <span class="spacer"></span>
+    <button id="btnClose" class="btn btn-ghost-light" type="button" hidden>Tutup kursus</button>
+    <label class="btn btn-signal" for="fileInput" style="margin:0">Buka .zip</label>
+    <input id="fileInput" type="file" accept=".zip,application/zip" hidden>
+  </header>
+
+  <section id="viewUpload">
+    <div id="dropzone" class="dropzone">
+      <div class="big-ic" aria-hidden="true"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 5l12 7-12 7z"/></svg></div>
+      <h1>Putar paket SCORM</h1>
+      <p class="muted">Seret file <b>.zip</b> SCORM 1.2 atau 2004 ke sini — dari Studio SCORM, Articulate, iSpring, Adapt, dll. File diekstrak di browser Anda, tidak diunggah ke server mana pun.</p>
+      <p><label class="btn btn-primary" for="fileInput">Pilih file .zip</label></p>
+      <div id="importProgress" hidden>
+        <div class="progress"><div></div></div>
+        <small id="importText" class="muted"></small>
+      </div>
+      <div class="field field-inline">
+        <label for="learnerName">Nama peserta (dikirim ke kursus)</label>
+        <input id="learnerName" type="text" placeholder="Contoh: Rosiana">
+      </div>
+    </div>
+    <div class="library" id="library"></div>
+  </section>
+
+  <section id="viewPlayer" class="player" hidden>
+    <aside class="player-side">
+      <div>
+        <h2 id="courseTitle" style="margin-bottom:6px"></h2>
+        <span id="courseVersion" class="version-badge"></span>
+      </div>
+      <nav aria-label="Daftar isi"><ul id="toc" class="toc"></ul></nav>
+      <div class="row">
+        <button id="btnPrev" class="btn btn-sm" type="button">Sebelumnya</button>
+        <button id="btnNext" class="btn btn-sm" type="button">Berikutnya</button>
+      </div>
+      <div class="stats" aria-live="polite">
+        <div class="stat"><span>Status</span><b id="stStatus">–</b></div>
+        <div class="stat"><span>Nilai</span><b id="stScore">–</b></div>
+        <div class="stat"><span>Hasil</span><b id="stSuccess">–</b></div>
+        <div class="stat"><span>Total waktu</span><b id="stTime">–</b></div>
+      </div>
+      <button id="btnReset" class="btn btn-sm btn-danger" type="button">Hapus progres kursus ini</button>
+    </aside>
+    <div class="player-main">
+      <div class="stage">
+        <iframe id="frame" title="Konten kursus" allow="autoplay; fullscreen; microphone" allowfullscreen></iframe>
+        <div id="overlay" class="stage-overlay" hidden>
+          <div>
+            <h2 id="overlayTitle">Sesi selesai</h2>
+            <p class="muted" id="overlayText">Kursus menutup sesinya. Progres sudah tersimpan.</p>
+            <button id="btnRelaunch" class="btn btn-primary" type="button">Buka lagi</button>
+          </div>
+        </div>
+      </div>
+      <details class="debug">
+        <summary>Log komunikasi SCORM (untuk pengembang)</summary>
+        <pre id="log" class="log"></pre>
+      </details>
+    </div>
+  </section>
+</body>
+</html>

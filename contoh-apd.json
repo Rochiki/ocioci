@@ -1,0 +1,241 @@
+{
+ "format": "studio-scorm-proyek",
+ "formatVersion": 2,
+ "project": {
+  "id": "contoh_apd02",
+  "format": 2,
+  "title": "Pengenalan Alat Pelindung Diri (APD)",
+  "description": "Kursus singkat ±10 menit: mengapa APD penting, jenis APD dasar, mengenali kondisi tidak aman, dan prosedur LOTO.",
+  "version": "1.2",
+  "passingScore": 80,
+  "navigation": "bebas",
+  "certificate": true,
+  "certificateIssuer": "Tim K3",
+  "theme": {
+   "preset": "k3",
+   "accent": "#00704f",
+   "accent2": "#ffc21a",
+   "onAccent": "#ffffff",
+   "bg": "#f2f5f0",
+   "surface": "#ffffff",
+   "ink": "#18222c",
+   "muted": "#5d6871",
+   "line": "#d8dfd6",
+   "font": "modern",
+   "transition": "geser"
+  },
+  "logo": null,
+  "cover": {
+   "data": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAwIDcwMCI+CjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzBmM2QyZSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzAwNzA0ZiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPgo8cmVjdCB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI3MDAiIGZpbGw9InVybCgjZykiLz4KPGcgb3BhY2l0eT0iLjE4IiBmaWxsPSIjZmZjMjFhIj48cGF0aCBkPSJNMCA1NjAgTDEyMDAgMzgwIEwxMjAwIDQ3MCBMMCA2NTBaIi8+PC9nPgo8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg3NjAgMTcwKSI+PHBhdGggZD0iTTAgMjYwIFEwIDQwIDIwMCAyNiBRNDAwIDQwIDQwMCAyNjAgWiIgZmlsbD0iI2ZmYzIxYSIvPjxyZWN0IHg9Ii0zMCIgeT0iMjUwIiB3aWR0aD0iNDYwIiBoZWlnaHQ9IjQwIiByeD0iMjAiIGZpbGw9IiNlOGFkMDAiLz48cmVjdCB4PSIxNzUiIHk9IjI2IiB3aWR0aD0iNTAiIGhlaWdodD0iMjMwIiBmaWxsPSIjZjViODAwIi8+PC9nPgo8ZyBmaWxsPSIjZmZmIiBvcGFjaXR5PSIuMTIiPjxjaXJjbGUgY3g9IjEyMCIgY3k9IjEyMCIgcj0iODAiLz48Y2lyY2xlIGN4PSIzMDAiIGN5PSI2MjAiIHI9IjEyMCIvPjwvZz4KPC9zdmc+",
+   "name": "sampul.svg",
+   "type": "image/svg+xml"
+  },
+  "narration": {
+   "browser": true,
+   "autoplay": false,
+   "voiceName": "",
+   "rate": 1
+  },
+  "slides": [
+   {
+    "id": "s_pentingnya",
+    "type": "content",
+    "title": "Mengapa APD penting?",
+    "body": "Alat Pelindung Diri (APD) melindungi pekerja dari bahaya yang **masih tersisa** setelah upaya pengendalian lain dilakukan.\n\nDalam hierarki pengendalian risiko, APD berada di urutan terakhir:\n\n1. Eliminasi — hilangkan bahayanya\n2. Substitusi — ganti dengan yang lebih aman\n3. Rekayasa teknik — pasang pengaman, isolasi sumber bahaya\n4. Administratif — prosedur, izin kerja, pelatihan\n5. APD — lapisan pertahanan terakhir\n\nArtinya, APD **wajib dipakai**, tetapi tidak boleh menjadi satu-satunya pengaman.",
+    "image": {
+     "data": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2MDAgNDcwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiPgo8cmVjdCB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQ3MCIgZmlsbD0iI2YyZjVmMCIvPgo8ZyBmb250LXNpemU9IjIxIiBmb250LXdlaWdodD0iNzAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4KPHBhdGggZD0iTTMwMCAzMCBMNTYwIDQ0MCBMNDAgNDQwIFoiIGZpbGw9Im5vbmUiLz4KPHBvbHlnb24gcG9pbnRzPSI0MCw0NDAgNTYwLDQ0MCA1MTIsMzY0IDg4LDM2NCIgZmlsbD0iI2U0NTcyZSIvPjx0ZXh0IHg9IjMwMCIgeT0iNDEwIiBmaWxsPSIjZmZmIj41LiBBUEQ8L3RleHQ+Cjxwb2x5Z29uIHBvaW50cz0iODgsMzYwIDUxMiwzNjAgNDY0LDI4NCAxMzYsMjg0IiBmaWxsPSIjZDA4ZjAwIi8+PHRleHQgeD0iMzAwIiB5PSIzMzAiIGZpbGw9IiNmZmYiPjQuIEFkbWluaXN0cmF0aWY8L3RleHQ+Cjxwb2x5Z29uIHBvaW50cz0iMTM2LDI4MCA0NjQsMjgwIDQxNiwyMDQgMTg0LDIwNCIgZmlsbD0iIzJmN2RkMSIvPjx0ZXh0IHg9IjMwMCIgeT0iMjUwIiBmaWxsPSIjZmZmIj4zLiBSZWtheWFzYSB0ZWtuaWs8L3RleHQ+Cjxwb2x5Z29uIHBvaW50cz0iMTg0LDIwMCA0MTYsMjAwIDM2OCwxMjQgMjMyLDEyNCIgZmlsbD0iIzBlOGE5YSIvPjx0ZXh0IHg9IjMwMCIgeT0iMTcwIiBmaWxsPSIjZmZmIj4yLiBTdWJzdGl0dXNpPC90ZXh0Pgo8cG9seWdvbiBwb2ludHM9IjIzMiwxMjAgMzY4LDEyMCAzMDAsMTQiIGZpbGw9IiMwMDcwNGYiLz48dGV4dCB4PSIzMDAiIHk9Ijk4IiBmaWxsPSIjZmZmIiBmb250LXNpemU9IjE3Ij4xLiBFbGltaW5hc2k8L3RleHQ+CjwvZz4KPHRleHQgeD0iNTc0IiB5PSI0MCIgZm9udC1zaXplPSIxNSIgZmlsbD0iIzE4MjIyYyIgdGV4dC1hbmNob3I9ImVuZCI+cGFsaW5nIGVmZWt0aWYg4oaRPC90ZXh0Pgo8dGV4dCB4PSI1NzQiIHk9IjQ2MiIgZm9udC1zaXplPSIxNSIgZmlsbD0iIzE4MjIyYyIgdGV4dC1hbmNob3I9ImVuZCI+4oaTIHBhbGluZyBsZW1haDwvdGV4dD4KPC9zdmc+",
+     "name": "hierarki-pengendalian.svg",
+     "type": "image/svg+xml"
+    },
+    "imageAlt": "Piramida hierarki pengendalian risiko: eliminasi, substitusi, rekayasa teknik, administratif, APD",
+    "layout": "kanan",
+    "narration": "",
+    "audio": null
+   },
+   {
+    "id": "s_kartu",
+    "type": "flip",
+    "title": "Kenali APD dasar",
+    "intro": "Ketuk setiap kartu untuk melihat fungsinya. Pilih APD sesuai bahaya yang tercantum di JSA/JSEA.",
+    "requireAll": true,
+    "cards": [
+     {
+      "front": "Helm keselamatan",
+      "back": "Melindungi kepala dari benda jatuh dan benturan. Pakai tali dagu saat bekerja di ketinggian.",
+      "image": {
+       "data": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgOTAiPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iOTAiIHJ4PSIxNCIgZmlsbD0iI2ZmYzIxYSIgb3BhY2l0eT0iLjE0Ii8+PHBhdGggZD0iTTI1IDYyIFEyNSAyNSA2MCAyMiBROTUgMjUgOTUgNjIgWiIgZmlsbD0iI2ZmYzIxYSIgc3Ryb2tlPSIjYzk5NTAwIiBzdHJva2Utd2lkdGg9IjMiLz48cmVjdCB4PSIxOCIgeT0iNjAiIHdpZHRoPSI4NCIgaGVpZ2h0PSI5IiByeD0iNCIgZmlsbD0iI2M5OTUwMCIvPjxyZWN0IHg9IjU1IiB5PSIyMiIgd2lkdGg9IjEwIiBoZWlnaHQ9IjM4IiBmaWxsPSIjZThhZDAwIi8+PC9zdmc+",
+       "name": "helm.svg",
+       "type": "image/svg+xml"
+      }
+     },
+     {
+      "front": "Kacamata pengaman",
+      "back": "Melindungi mata dari serpihan, percikan bahan kimia, dan gerinda.",
+      "image": {
+       "data": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgOTAiPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iOTAiIHJ4PSIxNCIgZmlsbD0iIzJmN2RkMSIgb3BhY2l0eT0iLjE0Ii8+PHJlY3QgeD0iMTgiIHk9IjM1IiB3aWR0aD0iMzgiIGhlaWdodD0iMjQiIHJ4PSIxMCIgZmlsbD0iI2JmZTNmMCIgc3Ryb2tlPSIjMmY3ZGQxIiBzdHJva2Utd2lkdGg9IjQiLz48cmVjdCB4PSI2NCIgeT0iMzUiIHdpZHRoPSIzOCIgaGVpZ2h0PSIyNCIgcng9IjEwIiBmaWxsPSIjYmZlM2YwIiBzdHJva2U9IiMyZjdkZDEiIHN0cm9rZS13aWR0aD0iNCIvPjxwYXRoIGQ9Ik01NiA0NCBoOCIgc3Ryb2tlPSIjMmY3ZGQxIiBzdHJva2Utd2lkdGg9IjQiLz48L3N2Zz4=",
+       "name": "kacamata.svg",
+       "type": "image/svg+xml"
+      }
+     },
+     {
+      "front": "Sarung tangan",
+      "back": "Pilih sesuai bahaya: tahan potong, tahan panas, atau tahan bahan kimia.",
+      "image": {
+       "data": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgOTAiPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iOTAiIHJ4PSIxNCIgZmlsbD0iI2U0NTcyZSIgb3BhY2l0eT0iLjE0Ii8+PHBhdGggZD0iTTQwIDc4IFY0MCBxMC02IDYtNiBxNiAwIDYgNiBWMzAgcTAtNiA2LTYgcTYgMCA2IDYgdjQgcTAtNiA2LTYgcTYgMCA2IDYgdjEwIHEwLTUgNS01IHE1IDAgNSA1IFY2MCBxMCAxOC0xOCAxOCBaIiBmaWxsPSIjZTQ1NzJlIi8+PC9zdmc+",
+       "name": "sarung-tangan.svg",
+       "type": "image/svg+xml"
+      }
+     },
+     {
+      "front": "Sepatu keselamatan",
+      "back": "Melindungi kaki dari tertimpa, tertusuk, dan tergelincir.",
+      "image": {
+       "data": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgOTAiPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iOTAiIHJ4PSIxNCIgZmlsbD0iIzhiNWUzNCIgb3BhY2l0eT0iLjE0Ii8+PHBhdGggZD0iTTIwIDQwIGgzNSBsNSAxNSBxMzAgMiA0MCAxMiB2MTAgSDIwIFoiIGZpbGw9IiM1YTNiMWUiLz48cmVjdCB4PSIyMCIgeT0iNzAiIHdpZHRoPSI4MCIgaGVpZ2h0PSI4IiBmaWxsPSIjMmIxYjBjIi8+PHBhdGggZD0iTTU4IDU1IHEyMCAwIDMwIDgiIHN0cm9rZT0iI2M5OTUwMCIgc3Ryb2tlLXdpZHRoPSI0IiBmaWxsPSJub25lIi8+PC9zdmc+",
+       "name": "sepatu.svg",
+       "type": "image/svg+xml"
+      }
+     },
+     {
+      "front": "Pelindung telinga",
+      "back": "Earplug atau earmuff wajib di area bising.",
+      "image": {
+       "data": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgOTAiPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iOTAiIHJ4PSIxNCIgZmlsbD0iIzAwNzA0ZiIgb3BhY2l0eT0iLjE0Ii8+PHBhdGggZD0iTTMwIDYwIFEzMCAyMCA2MCAxOCBROTAgMjAgOTAgNjAiIHN0cm9rZT0iIzAwNzA0ZiIgc3Ryb2tlLXdpZHRoPSI3IiBmaWxsPSJub25lIi8+PHJlY3QgeD0iMTgiIHk9IjUwIiB3aWR0aD0iMjIiIGhlaWdodD0iMzAiIHJ4PSI5IiBmaWxsPSIjMDA3MDRmIi8+PHJlY3QgeD0iODAiIHk9IjUwIiB3aWR0aD0iMjIiIGhlaWdodD0iMzAiIHJ4PSI5IiBmaWxsPSIjMDA3MDRmIi8+PC9zdmc+",
+       "name": "pelindung-telinga.svg",
+       "type": "image/svg+xml"
+      }
+     },
+     {
+      "front": "Full body harness",
+      "back": "Menahan tubuh bila terjatuh saat bekerja di ketinggian. Kaitkan pada titik angkur yang kuat.",
+      "image": {
+       "data": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgOTAiPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iOTAiIHJ4PSIxNCIgZmlsbD0iI2MyNDEwYyIgb3BhY2l0eT0iLjE0Ii8+PGNpcmNsZSBjeD0iNjAiIGN5PSIxOCIgcj0iOSIgZmlsbD0iIzE4MjIyYyIvPjxwYXRoIGQ9Ik00NSAzMiBMNzUgMzIgTDcwIDc1IEw1MCA3NSBaIiBmaWxsPSJub25lIiBzdHJva2U9IiNjMjQxMGMiIHN0cm9rZS13aWR0aD0iNSIvPjxwYXRoIGQ9Ik00NSAzMiBMNzUgNzUgTTc1IDMyIEw0NSA3NSIgc3Ryb2tlPSIjYzI0MTBjIiBzdHJva2Utd2lkdGg9IjQiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjMwIiByPSI1IiBmaWxsPSIjODg4Ii8+PC9zdmc+",
+       "name": "harness.svg",
+       "type": "image/svg+xml"
+      }
+     }
+    ],
+    "narration": "",
+    "audio": null
+   },
+   {
+    "id": "s_bahaya",
+    "type": "hotspot",
+    "title": "Temukan kondisi tidak aman",
+    "intro": "Ada **5 kondisi tidak aman** di bengkel ini. Ketuk bagian gambar yang menurut Anda berbahaya.",
+    "image": {
+     "data": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgNTAwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiPgo8cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjMzMCIgZmlsbD0iI2RmZTZlYSIvPgo8cmVjdCB5PSIzMzAiIHdpZHRoPSI4MDAiIGhlaWdodD0iMTcwIiBmaWxsPSIjOWFhM2E4Ii8+CjxwYXRoIGQ9Ik0wIDMzMCBMODAwIDMzMCIgc3Ryb2tlPSIjN2Q4NjhiIiBzdHJva2Utd2lkdGg9IjQiLz4KPHJlY3QgeD0iMzAwIiB5PSIzODAiIHdpZHRoPSIyMDAiIGhlaWdodD0iMTIwIiBmaWxsPSIjZTlkMzZiIiBvcGFjaXR5PSIuNSIvPgo8dGV4dCB4PSI0MDAiIHk9IjQ3MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzVjNGYxMiIgZm9udC13ZWlnaHQ9IjcwMCI+SkFMVVIgUEVKQUxBTiBLQUtJPC90ZXh0Pgo8IS0tIHJhayAtLT4KPHJlY3QgeD0iNTYwIiB5PSI5MCIgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyNDAiIGZpbGw9IiM2YjdhODYiLz4KPHJlY3QgeD0iNTcwIiB5PSIxMDAiIHdpZHRoPSIxODAiIGhlaWdodD0iOCIgZmlsbD0iIzRkNTk2MyIvPjxyZWN0IHg9IjU3MCIgeT0iMTcwIiB3aWR0aD0iMTgwIiBoZWlnaHQ9IjgiIGZpbGw9IiM0ZDU5NjMiLz48cmVjdCB4PSI1NzAiIHk9IjI0MCIgd2lkdGg9IjE4MCIgaGVpZ2h0PSI4IiBmaWxsPSIjNGQ1OTYzIi8+CjxyZWN0IHg9IjU4NSIgeT0iMTI1IiB3aWR0aD0iNDAiIGhlaWdodD0iNDUiIGZpbGw9IiNjMjQxMGMiLz48cmVjdCB4PSI2NDAiIHk9IjEzNSIgd2lkdGg9IjUwIiBoZWlnaHQ9IjM1IiBmaWxsPSIjMmY3ZGQxIi8+PHJlY3QgeD0iNjAwIiB5PSIxOTUiIHdpZHRoPSI2MCIgaGVpZ2h0PSI0NSIgZmlsbD0iIzAwNzA0ZiIvPjxyZWN0IHg9IjY5MCIgeT0iMjAwIiB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIGZpbGw9IiNkMDhmMDAiLz4KPCEtLSB0YW5nZ2EgYmVyc2FuZGFyIG1pcmluZyAtLT4KPGcgc3Ryb2tlPSIjYjU2NTFkIiBzdHJva2Utd2lkdGg9IjkiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PGxpbmUgeDE9IjYxMCIgeTE9IjQ3MCIgeDI9IjcwMCIgeTI9IjcwIi8+PGxpbmUgeDE9IjY2MCIgeTE9IjQ4MCIgeDI9Ijc0NSIgeTI9Ijg1Ii8+CjxsaW5lIHgxPSI2MjAiIHkxPSI0MjUiIHgyPSI2NjgiIHkyPSI0MzYiIHN0cm9rZS13aWR0aD0iNiIvPjxsaW5lIHgxPSI2MzYiIHkxPSIzNTUiIHgyPSI2ODQiIHkyPSIzNjYiIHN0cm9rZS13aWR0aD0iNiIvPjxsaW5lIHgxPSI2NTIiIHkxPSIyODUiIHgyPSI3MDAiIHkyPSIyOTYiIHN0cm9rZS13aWR0aD0iNiIvPjxsaW5lIHgxPSI2NjgiIHkxPSIyMTUiIHgyPSI3MTYiIHkyPSIyMjYiIHN0cm9rZS13aWR0aD0iNiIvPjxsaW5lIHgxPSI2ODQiIHkxPSIxNDUiIHgyPSI3MzIiIHkyPSIxNTYiIHN0cm9rZS13aWR0aD0iNiIvPjwvZz4KPCEtLSBtZWphIGtlcmphIC0tPgo8cmVjdCB4PSIyNTAiIHk9IjIzMCIgd2lkdGg9IjI3MCIgaGVpZ2h0PSIyMiIgZmlsbD0iIzhiNWUzNCIvPjxyZWN0IHg9IjI2MiIgeT0iMjUyIiB3aWR0aD0iMTYiIGhlaWdodD0iODAiIGZpbGw9IiM2ZDQ5MjciLz48cmVjdCB4PSI0OTIiIHk9IjI1MiIgd2lkdGg9IjE2IiBoZWlnaHQ9IjgwIiBmaWxsPSIjNmQ0OTI3Ii8+CjxyZWN0IHg9IjMwMCIgeT0iMTk2IiB3aWR0aD0iNzAiIGhlaWdodD0iMzQiIHJ4PSI0IiBmaWxsPSIjNDQ0Ii8+PGNpcmNsZSBjeD0iNDIwIiBjeT0iMjE0IiByPSIxNiIgZmlsbD0iIzc3NyIvPjxyZWN0IHg9IjQ0MCIgeT0iMjA4IiB3aWR0aD0iNjAiIGhlaWdodD0iMTIiIGZpbGw9IiM1NTUiLz4KPCEtLSB0YWJ1bmcgZ2FzIHRhbnBhIHJhbnRhaSAtLT4KPHJlY3QgeD0iNzAiIHk9IjE3MCIgd2lkdGg9IjcwIiBoZWlnaHQ9IjIwMCIgcng9IjM0IiBmaWxsPSIjMmY3ZGQxIi8+PHJlY3QgeD0iOTIiIHk9IjE0OCIgd2lkdGg9IjI2IiBoZWlnaHQ9IjMwIiByeD0iNiIgZmlsbD0iIzMwMzYzYiIvPjxyZWN0IHg9IjcwIiB5PSIyMzAiIHdpZHRoPSI3MCIgaGVpZ2h0PSIxNCIgZmlsbD0iI2ZmZiIgb3BhY2l0eT0iLjgiLz4KPHBhdGggZD0iTTYwIDI1MCBRNDUgMjYwIDYwIDI3MCIgc3Ryb2tlPSIjY2NjIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiLz4KPCEtLSB0dW1wYWhhbiBvbGkgLS0+CjxlbGxpcHNlIGN4PSIxODAiIGN5PSI0MjAiIHJ4PSI5NSIgcnk9IjMyIiBmaWxsPSIjMWQxZDFkIiBvcGFjaXR5PSIuODUiLz48ZWxsaXBzZSBjeD0iMTYwIiBjeT0iNDEyIiByeD0iMzUiIHJ5PSI4IiBmaWxsPSIjNTU1IiBvcGFjaXR5PSIuNiIvPgo8IS0tIGthYmVsIG1lbGludGFuZyAmIHRlcmtlbHVwYXMgLS0+CjxwYXRoIGQ9Ik0wIDQ1NSBDIDEyMCA0NDAsIDI0MCA0NzAsIDM2MCA0NDAgUyA1MjAgNDMwLCA1NjAgNDcwIiBzdHJva2U9IiMxMTEiIHN0cm9rZS13aWR0aD0iNyIgZmlsbD0ibm9uZSIvPgo8Y2lyY2xlIGN4PSI0NDAiIGN5PSI0MzIiIHI9IjEwIiBmaWxsPSIjZmZkNDAwIi8+PHBhdGggZD0iTTQzMiA0MjAgbDggLTE2IGw0IDEwIGw4IC0xNCIgc3Ryb2tlPSIjZmY5NTAwIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiLz4KPCEtLSBBUEFSIHRlcnR1dHVwIGtvdGFrIC0tPgo8cmVjdCB4PSIxOTAiIHk9IjE3MCIgd2lkdGg9IjI4IiBoZWlnaHQ9IjcwIiByeD0iOCIgZmlsbD0iI2M0MzcyZCIvPjxyZWN0IHg9IjE3MCIgeT0iMjE1IiB3aWR0aD0iODAiIGhlaWdodD0iMTE1IiBmaWxsPSIjYTA3ODRlIi8+PHRleHQgeD0iMjEwIiB5PSIyODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMTMiIGZpbGw9IiNmZmYiIGZvbnQtd2VpZ2h0PSI3MDAiPktBUkRVUzwvdGV4dD4KPHRleHQgeD0iMjAiIHk9IjQwIiBmb250LXNpemU9IjIyIiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjMTgyMjJjIj5BcmVhIGJlbmdrZWwgc2VydmljZTwvdGV4dD4KPC9zdmc+",
+     "name": "bengkel.svg",
+     "type": "image/svg+xml"
+    },
+    "imageAlt": "Ilustrasi area bengkel dengan beberapa kondisi tidak aman",
+    "mode": "cari",
+    "requireAll": false,
+    "radius": 10,
+    "points": [
+     {
+      "x": 22.5,
+      "y": 84,
+      "title": "Tumpahan oli",
+      "text": "Risiko tergelincir. Segera bersihkan dengan absorben dan pasang tanda peringatan."
+     },
+     {
+      "x": 55,
+      "y": 86,
+      "title": "Kabel terkelupas melintang",
+      "text": "Risiko tersandung dan tersengat listrik. Matikan sumber listrik, ganti kabel, rapikan jalurnya."
+     },
+     {
+      "x": 84,
+      "y": 50,
+      "title": "Tangga tidak diamankan",
+      "text": "Tangga bersandar tanpa diikat/dipegangi. Amankan bagian atas atau pakai tangga dengan pengunci."
+     },
+     {
+      "x": 13.5,
+      "y": 54,
+      "title": "Tabung gas tidak dirantai",
+      "text": "Tabung bisa roboh dan katupnya patah. Ikat tabung tegak dengan rantai pada dinding/troli."
+     },
+     {
+      "x": 26,
+      "y": 52,
+      "title": "APAR terhalang kardus",
+      "text": "Alat pemadam harus mudah dijangkau. Singkirkan barang yang menghalangi."
+     }
+    ],
+    "narration": "",
+    "audio": null
+   },
+   {
+    "id": "s_loto",
+    "type": "sort",
+    "title": "Urutan Lockout/Tagout (LOTO)",
+    "intro": "Sebelum memperbaiki unit, energinya harus diisolasi. Susun langkah LOTO berikut sesuai urutan yang benar.",
+    "items": [
+     "Beri tahu pihak terkait bahwa unit akan diisolasi",
+     "Matikan unit dengan cara normal",
+     "Isolasi semua sumber energi",
+     "Pasang gembok dan tag pada titik isolasi",
+     "Lepaskan atau tahan energi tersisa (tekanan, pegas, kapasitor)",
+     "Verifikasi: coba nyalakan untuk memastikan unit benar-benar mati"
+    ],
+    "feedback": "Verifikasi adalah langkah terakhir yang paling sering dilupakan — jangan dilewati.",
+    "narration": "",
+    "audio": null
+   },
+   {
+    "id": "s_kuis",
+    "type": "quiz",
+    "title": "Uji pemahaman",
+    "intro": "Jawab semua soal. Nilai lulus 80.",
+    "shuffle": true,
+    "questions": [
+     {
+      "type": "single",
+      "text": "Dalam hierarki pengendalian risiko, APD berada di urutan…",
+      "options": [
+       "Pertama",
+       "Kedua",
+       "Terakhir",
+       "Tidak termasuk hierarki"
+      ],
+      "correct": [
+       2
+      ],
+      "feedback": "APD adalah lapisan pertahanan terakhir."
+     },
+     {
+      "type": "multi",
+      "text": "Mana saja yang termasuk kondisi tidak aman di bengkel tadi? (pilih semua yang benar)",
+      "options": [
+       "Tumpahan oli di lantai",
+       "Tabung gas yang tidak dirantai",
+       "Rak barang yang tertata rapi",
+       "APAR yang terhalang barang"
+      ],
+      "correct": [
+       0,
+       1,
+       3
+      ],
+      "feedback": "Rak yang tertata rapi bukan kondisi tidak aman."
+     },
+     {
+      "type": "tf",
+      "text": "Helm yang retak halus masih boleh dipakai untuk pekerjaan ringan.",
+      "options": [
+       "Benar",
+       "Salah"
+      ],
+      "correct": [
+       1
+      ],
+      "feedback": "Helm retak tidak lagi mampu menahan benturan. Segera ganti."
+     }
+    ],
+    "narration": "",
+    "audio": null
+   }
+  ]
+ }
+}
