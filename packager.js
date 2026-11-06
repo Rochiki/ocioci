@@ -156,6 +156,7 @@ export async function toCourseData(project, putAsset, putHtml) {
       case 'sort': o = { intro: s.intro || '', items: filled(s.items).map((t) => t.trim()), feedback: s.feedback || '' }; break;
       default: o = { body: s.body || '', image: await a(s.image, `gambar-${n}`), imageAlt: s.imageAlt || '', layout: s.layout || 'atas' }; base.type = 'content';
     }
+    if (s.full && ['image', 'video', 'html'].includes(s.type)) base.full = true;
     slides.push({ ...base, ...o });
   }
   const t = project.theme || {};

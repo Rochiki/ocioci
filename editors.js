@@ -20,9 +20,9 @@ export const TYPES = {
 export function newSlide(type) {
   const base = { id: uid('s'), type, title: '', narration: '', audio: null };
   switch (type) {
-    case 'image': return { ...base, title: 'Gambar', image: null, imageAlt: '', caption: '', fit: 'contain' };
-    case 'video': return { ...base, title: 'Video', source: 'file', video: null, url: '', caption: '', mustWatch: false };
-    case 'html': return { ...base, title: 'Konten HTML', source: 'code', html: '', fileName: '', zip: null, height: 560, hideTitle: false, caption: '' };
+    case 'image': return { ...base, title: 'Gambar', full: true, image: null, imageAlt: '', caption: '', fit: 'contain' };
+    case 'video': return { ...base, title: 'Video', full: true, source: 'file', video: null, url: '', caption: '', mustWatch: false };
+    case 'html': return { ...base, title: 'Konten HTML', full: true, source: 'code', html: '', fileName: '', zip: null, height: 560, hideTitle: false, caption: '' };
     case 'flip': return { ...base, title: 'Kenali istilahnya', intro: 'Ketuk kartu untuk melihat penjelasannya.', requireAll: false, cards: [{ front: '', back: '', image: null }, { front: '', back: '', image: null }] };
     case 'hotspot': return { ...base, title: 'Temukan bahayanya', intro: '', image: null, imageAlt: '', mode: 'cari', requireAll: false, radius: 9, points: [] };
     case 'quiz': return { ...base, title: 'Kuis', intro: '', shuffle: true, questions: [newQuestion('single')] };
@@ -126,7 +126,10 @@ E.content = (s, ctx) => [
   s.image ? field('Teks alternatif gambar', text(s, 'imageAlt', ctx, { placeholder: 'Jelaskan isi gambar untuk pembaca layar' })) : null,
 ];
 
+const fullToggle = (s, ctx) => toggle(s, 'full', ctx, 'Layar penuh', 'Media memenuhi seluruh halaman — tanpa judul, keterangan, dan margin. Karakter presenter otomatis disembunyikan (kecuali pose diatur manual di slide ini).');
+
 E.image = (s, ctx) => [
+  fullToggle(s, ctx),
   h('div', { class: 'field' }, h('label', {}, 'Gambar / GIF'), assetPicker(s, 'image', ctx, { kind: 'image', label: 'Pilih gambar atau GIF', maxMB: 25 })),
   field('Keterangan (opsional)', text(s, 'caption', ctx, { placeholder: 'Mis. Contoh penggunaan APD yang benar' })),
   h('div', { class: 'field' }, h('label', {}, 'Ukuran tampil'), segmented(s, 'fit', ctx, [['contain', 'Utuh'], ['cover', 'Penuh lebar']])),
@@ -134,6 +137,7 @@ E.image = (s, ctx) => [
 ];
 
 E.video = (s, ctx) => [
+  fullToggle(s, ctx),
   h('div', { class: 'field' }, h('label', {}, 'Sumber video'), segmented(s, 'source', ctx, [['file', 'Unggah file', 'upload'], ['url', 'Link YouTube / Vimeo / Drive', 'link']], { onChange: () => ctx.rerender() })),
   s.source === 'url'
     ? field('Link video', text(s, 'url', ctx, { placeholder: 'https://www.youtube.com/watch?v=…' }), 'Video dari link butuh internet saat kursus dibuka. Untuk Google Drive, set berbagi ke "Siapa saja yang memiliki link".')
@@ -150,6 +154,7 @@ E.html = (s, ctx) => {
     s.html = await f.text(); s.fileName = f.name; ctx.changed({ list: true }); ctx.rerender();
   };
   return [
+    fullToggle(s, ctx),
     h('div', { class: 'field' }, h('label', {}, 'Sumber'), segmented(s, 'source', ctx, [['code', 'Tempel kode / embed', 'html'], ['file', 'File .html', 'file'], ['zip', 'Mini-website .zip', 'zip']], { onChange: () => ctx.rerender() })),
     s.source === 'zip'
       ? h('div', { class: 'field' }, h('label', {}, 'File .zip'), assetPicker(s, 'zip', ctx, { kind: 'zip', label: 'Pilih file .zip', maxMB: 200 }),

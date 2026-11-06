@@ -82,6 +82,8 @@ Tab **Gaya → Karakter presenter**: nyalakan, lalu pilih karakter bawaan (Raka,
 
 Kamus pelafalan (K3 → "K tiga", APD → "A P D", dll.) ada di `tts.js` → `PRONUNCIATION`.
 
+**Layar penuh untuk gambar / video / HTML:** slide media baru otomatis tampil memenuhi halaman (tanpa judul, keterangan, dan margin; karakter presenter disembunyikan). Matikan per slide lewat saklar "Layar penuh", atau nyalakan untuk semua slide lama lewat Atur → Tampilan media. Nama file bawaan seperti `index.html` atau `video.mp4` tidak dipakai sebagai judul.
+
 ## 5. Daftar file
 
 | File | Fungsi |

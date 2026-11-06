@@ -6,7 +6,7 @@ import { uid } from './util.js';
 import { h, icon, toast, modal, busy, formatBytes } from './ui.js';
 import { TYPES, newSlide, slideEditor, field, text, toggle, segmented, assetPicker, urlOf } from './editors.js';
 import { loadTemplate, buildPackage, validateProject, toCourseData, wrapHtml, projectSize, isAsset } from './packager.js';
-import { importFiles, ACCEPT_ALL } from './importers.js';
+import { importFiles, ACCEPT_ALL, isGenericName } from './importers.js';
 import { BrowserTTS, Recorder, EdgeTTS, PiperTTS, EdgeDirectTTS, PIPER_VOICES, cleanForSpeech, normalizeServerUrl } from './tts.js';
 import { openCropper } from './crop.js';
 
@@ -523,6 +523,14 @@ function renderAtur() {
     h('h3', {}, 'Narasi'),
     toggle(p.narration, 'browser', ctx, 'Bacakan dengan suara perangkat', 'Untuk slide tanpa file audio. Gratis, tanpa server.'),
     toggle(p.narration, 'autoplay', ctx, 'Putar narasi otomatis di setiap slide'),
+    h('h3', {}, 'Tampilan media'),
+    h('p', { class: 'hint' }, 'Slide gambar, video, dan HTML baru otomatis tampil layar penuh (tanpa judul dan margin). Untuk slide lama, nyalakan sekaligus:'),
+    h('button', { class: 'btn', type: 'button', onclick: () => {
+      let n = 0;
+      for (const s of project.slides) if (['image', 'video', 'html'].includes(s.type) && !s.full) { s.full = true; n++; }
+      ctx.changed({ list: true }); renderEditor();
+      toast(n ? `${n} slide diubah menjadi layar penuh.` : 'Semua slide media sudah layar penuh.', 'ok');
+    } }, icon('phone'), 'Layar penuh untuk semua slide gambar/video/HTML'),
     h('h3', {}, 'Proyek'),
     h('p', { class: 'hint' }, `Ukuran media: ${formatBytes(size)}. Proyek tersimpan otomatis di browser ini.`),
     h('div', { class: 'row wrap' },
@@ -697,7 +705,7 @@ async function runImport(files) {
     if (slides.length) {
       if (project.slides.length === 1 && project.slides[0].title === 'Selamat datang' && /Tulis pengantar/.test(project.slides[0].body || '')) project.slides = [];
       if (!project.slides.length) { project.slides.push(...slides); select(slides[0].id, true); ctx.changed({ list: true }); } else insertSlides(slides);
-      if (project.title === 'Kursus baru' && files.length === 1) { project.title = files[0].name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' '); }
+      if (project.title === 'Kursus baru' && files.length === 1 && !isGenericName(files[0].name)) { project.title = files[0].name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' '); }
       toast(`${slides.length} slide ditambahkan.`, 'ok');
     }
     if (notes.length) modal('Catatan impor', h('ul', { class: 'notes' }, notes.map((n) => h('li', {}, n))));

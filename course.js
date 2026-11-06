@@ -304,6 +304,7 @@
   }
   function autoPose(s, idx) {
     if (s.pose && s.pose !== 'auto') return s.pose;
+    if (isFull(s)) return 'sembunyi'; // media layar penuh: karakter tidak menutupi
     if (idx === 0) return 'lambai';
     var fk = window.StudioKarakter && C.presenter && (window.StudioKarakter.list[C.presenter.who] || {}).foto;
     if (fk && /bahaya|peringatan|awas|waspada|dilarang|larangan|fatal|kecelakaan/i.test((s.title || '') + ' ' + (s.body || ''))) return 'serius';
@@ -446,9 +447,10 @@
     var r = RENDER[s.type] || RENDER.content;
     var dir = opts.dir || 'maju';
     app.innerHTML = header() + drawer() +
-      '<main class="slide type-' + esc(s.type) + ' enter-' + dir + '" id="slide" tabindex="-1">' + r.html(s) +
+      '<main class="slide type-' + esc(s.type) + (isFull(s) ? ' full-media' : '') + ' enter-' + dir + '" id="slide" tabindex="-1">' + r.html(s) +
       '<aside class="captions" id="captions"' + (captionsOn ? '' : ' hidden') + '><strong>Teks narasi</strong><p>' + esc(narrationText(s)) + '</p></aside></main>' +
       footer();
+    document.body.classList.toggle('full-page', isFull(s));
     bindFrame();
     if (r.bind) r.bind(s, $('#slide'));
     pose(autoPose(s, state.i));
@@ -498,11 +500,13 @@
     },
   };
 
+  function isFull(s) { return !!(s && s.full && (s.type === 'image' || s.type === 'video' || s.type === 'html')); }
+
   RENDER.image = {
     html: function (s) {
-      return '<h2>' + esc(s.title) + '</h2><figure class="full fit-' + esc(s.fit || 'contain') + '">' +
+      return (isFull(s) ? '' : '<h2>' + esc(s.title) + '</h2>') + '<figure class="full fit-' + esc(s.fit || 'contain') + '">' +
         (s.image ? '<img src="' + esc(s.image) + '" alt="' + esc(s.imageAlt || s.caption || s.title || '') + '">' : '<div class="empty-media">Belum ada gambar</div>') +
-        (s.caption ? '<figcaption>' + inline(s.caption) + '</figcaption>' : '') + '</figure>';
+        (s.caption && !isFull(s) ? '<figcaption>' + inline(s.caption) + '</figcaption>' : '') + '</figure>';
     },
   };
 
@@ -529,9 +533,11 @@
             : '<iframe src="' + esc(e.src) + '" title="' + esc(s.title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>';
       }
       var need = s.mustWatch && s.video;
-      return '<h2>' + esc(s.title) + '</h2><div class="video-wrap">' + inner + '</div>' +
-        (s.caption ? '<div class="body">' + md(s.caption) + '</div>' : '') +
-        (need ? '<p class="status-line" id="watchStatus">' + (state.w[s.id] ? icon('check') + ' Video sudah ditonton' : 'Tonton video sampai selesai untuk melanjutkan.') + '</p>' : '');
+      var full = isFull(s);
+      var status = need ? '<p class="status-line' + (full ? ' overlay' : '') + '" id="watchStatus">' : '';
+      return (full ? '' : '<h2>' + esc(s.title) + '</h2>') + '<div class="video-wrap">' + inner + (full ? status : '') + '</div>' +
+        (s.caption && !full ? '<div class="body">' + md(s.caption) + '</div>' : '') +
+        (need && !full ? '<p class="status-line" id="watchStatus">' + (state.w[s.id] ? icon('check') + ' Video sudah ditonton' : 'Tonton video sampai selesai untuk melanjutkan.') + '</p>' : '');
     },
     bind: function (s, root) {
       var v = $('#vid', root);
@@ -555,9 +561,9 @@
       var frame = s.src ? '<iframe id="htmlFrame" src="' + esc(s.src) + '" title="' + esc(s.title) + '" style="height:' + h + 'px" allow="fullscreen; autoplay" allowfullscreen></iframe>'
         : s.srcdoc != null ? '<iframe id="htmlFrame" srcdoc="' + esc(s.srcdoc) + '" title="' + esc(s.title) + '" style="height:' + h + 'px" allow="fullscreen; autoplay" allowfullscreen></iframe>'
           : '<div class="empty-media">' + esc(s.placeholder || 'Konten HTML belum diisi') + '</div>';
-      return (s.hideTitle ? '' : '<h2>' + esc(s.title) + '</h2>') + '<div class="html-wrap">' + frame +
+      return (s.hideTitle || isFull(s) ? '' : '<h2>' + esc(s.title) + '</h2>') + '<div class="html-wrap">' + frame +
         '<button class="btn small" id="btnFull">' + icon('full') + '<span>Layar penuh</span></button></div>' +
-        (s.caption ? '<div class="body">' + md(s.caption) + '</div>' : '');
+        (s.caption && !isFull(s) ? '<div class="body">' + md(s.caption) + '</div>' : '');
     },
     bind: function (s, root) {
       var b = $('#btnFull', root), f = $('#htmlFrame', root);
@@ -835,6 +841,7 @@
 
   // ------------------------------------------------------------ layar awal, akhir, sertifikat
   function renderStart() {
+    document.body.classList.remove('full-page');
     var resume = S.isResume() && (state.i > 0 || state.v.length > 1);
     var gradedCount = graded().length;
     app.innerHTML =
@@ -861,6 +868,7 @@
   }
 
   function renderEnd() {
+    document.body.classList.remove('full-page');
     stopNarration(); evaluate(); save();
     var p = graded().length ? points() : null;
     var pendingGraded = graded().filter(function (g) { return !state.d[g.id]; });

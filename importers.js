@@ -15,6 +15,10 @@ import { cropBlob } from './crop.js';
 const NS_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 const MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', bmp: 'image/bmp', mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav' };
 const ext = (name) => (/\.([a-z0-9]+)$/i.exec(name || '')?.[1] || '').toLowerCase();
+/** Nama file bawaan yang tidak layak jadi judul (index.html, video.mp4, …). */
+const GENERIC_NAME = /^(index|untitled|video|image|img|default|new|test|sample|file|document|dokumen|slide|output|download|unnamed|tanpa judul|konten|content)\d*$/i;
+export const isGenericName = (name) => GENERIC_NAME.test(String(name).replace(/\.[^.]+$/, '').replace(/[_\-\s]+/g, ''));
+const titleOf = (name, fallback) => (isGenericName(name) ? fallback : prettyName(name));
 const prettyName = (name) => String(name).replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/^./, (c) => c.toUpperCase());
 const xml = (text) => new DOMParser().parseFromString(text, 'application/xml');
 const all = (node, local) => [...node.getElementsByTagNameNS('*', local)];
@@ -70,16 +74,16 @@ export async function importFiles(files, { onProgress = () => {}, pdfTextAsNarra
 }
 
 export function imageSlide(file) {
-  return { id: uid('s'), type: 'image', title: prettyName(file.name), image: asset(file, file.name), imageAlt: '', caption: '', fit: 'contain', narration: '', audio: null };
+  return { id: uid('s'), type: 'image', title: titleOf(file.name, 'Gambar'), full: true, image: asset(file, file.name), imageAlt: '', caption: '', fit: 'contain', narration: '', audio: null };
 }
 export function videoSlide(file) {
-  return { id: uid('s'), type: 'video', title: prettyName(file.name), source: 'file', video: asset(file, file.name), url: '', caption: '', mustWatch: false, narration: '', audio: null };
+  return { id: uid('s'), type: 'video', title: titleOf(file.name, 'Video'), full: true, source: 'file', video: asset(file, file.name), url: '', caption: '', mustWatch: false, narration: '', audio: null };
 }
 export async function htmlSlide(file) {
   const html = await file.text();
   const local = /\s(?:src|href)\s*=\s*["'](?!https?:|data:|#|mailto:|\/\/|javascript:)([^"']+\.(?:png|jpe?g|gif|svg|webp|css|js|mp4|mp3))["']/i.exec(html);
   return {
-    slide: { id: uid('s'), type: 'html', title: prettyName(file.name), source: 'file', html, fileName: file.name, zip: null, height: 600, hideTitle: false, caption: '', narration: '', audio: null },
+    slide: { id: uid('s'), type: 'html', title: titleOf(file.name, 'Konten HTML'), full: true, source: 'file', html, fileName: file.name, zip: null, height: 600, hideTitle: false, caption: '', narration: '', audio: null },
     note: local ? `${file.name} memakai file lain (mis. ${local[1]}). Agar gambar/CSS-nya ikut, bungkus semua file dalam satu .zip lalu impor .zip tersebut.` : null,
   };
 }
@@ -90,7 +94,7 @@ export async function zipSlide(file) {
   if (Object.keys(zip.files).some((n) => /(^|\/)imsmanifest\.xml$/i.test(n))) {
     // Tetap boleh, tapi beri tahu: paket SCORM di dalam SCORM tidak akan melapor nilai.
   }
-  return { id: uid('s'), type: 'html', title: prettyName(file.name), source: 'zip', html: '', fileName: file.name, zip: asset(file, file.name), height: 600, hideTitle: false, caption: '', narration: '', audio: null };
+  return { id: uid('s'), type: 'html', title: titleOf(file.name, 'Konten HTML'), full: true, source: 'zip', html: '', fileName: file.name, zip: asset(file, file.name), height: 600, hideTitle: false, caption: '', narration: '', audio: null };
 }
 
 // ------------------------------------------------------------ PowerPoint (.pptx)
