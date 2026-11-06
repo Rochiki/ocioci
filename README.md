@@ -82,6 +82,10 @@ Tab **Gaya → Karakter presenter**: nyalakan, lalu pilih karakter bawaan (Raka,
 
 Kamus pelafalan (K3 → "K tiga", APD → "A P D", dll.) ada di `tts.js` → `PRONUNCIATION`.
 
+**Karakter & suara per slide:** di tiap slide ada kartu "Karakter & suara slide ini" — pilih karakter (Ikut kursus / Tanpa karakter / salah satu dari 11 karakter) dan suara (Ikut pengaturan / Gadis / Ardi / Suara AI) beserta ekspresi, kecepatan, nada. Tombol "Coba suara" memutar contoh, "Buat MP3 dengan suara ini" membuat narasi slide itu, "Terapkan ke semua slide" menyalin pilihannya. Gambar semua karakter yang dipakai otomatis ikut masuk paket.
+
+**Tombol aksi di slide:** kartu "Tombol di slide ini" menambah tombol yang benar-benar berfungsi: Mulai, Lanjut, Kembali, Jeda/Lanjutkan narasi (di titik yang sama), Ulangi narasi, Lompat ke slide, Buka tautan (http/https/mailto/tel saja), Pop-up info, dan Selesai. Maksimal 6 per slide; pada mode berurutan, tombol maju tetap menghormati syarat slide (kuis/video/dll). Di slide layar penuh tombol melayang di bawah.
+
 **Layar penuh untuk gambar / video / HTML:** slide media baru otomatis tampil memenuhi halaman (tanpa judul, keterangan, dan margin; karakter presenter disembunyikan). Matikan per slide lewat saklar "Layar penuh", atau nyalakan untuk semua slide lama lewat Atur → Tampilan media. Nama file bawaan seperti `index.html` atau `video.mp4` tidak dipakai sebagai judul.
 
 ## 5. Daftar file
@@ -101,6 +105,7 @@ Kamus pelafalan (K3 → "K tiga", APD → "A P D", dll.) ada di `tts.js` → `PR
 | `package-store.js`, `scorm-runtime.js` | Ekstrak `.zip` & API LMS (SCORM 1.2 dan 2004) |
 | `packager.js`, `manifest.js` | Merakit paket `.zip` + `imsmanifest.xml` |
 | `safee-*.webp`, `safri-*.webp`, `helen-*.webp`, `vira-*.webp`, `shendi-*.webp`, `romi-*.webp` (18 gambar per karakter) | Bingkai karakter ilustrasi (6 pose × 3 bentuk mulut). Ikut ke paket SCORM hanya bila karakternya dipilih. Pose "Serius / tegas" otomatis dipakai pada slide yang memuat kata bahaya/peringatan/dilarang |
+| `slidetools.js` | Panel Builder per slide: Karakter & suara, dan Tombol aksi (data disimpan di `slide.who`, `slide.voice`, `slide.buttons`) |
 | `lipsync.js` | Gerak bibir: membaca irama suara MP3 + vokal dari teks narasi (a/o = mulut lebar, i/u/e = setengah, m/b/p dan jeda = tertutup). Jalur mulut dihitung di Builder saat pratinjau/ekspor dan disimpan di paket; tanpa jalur, dihitung dari teks + durasi audio. Suara perangkat peserta: mulut mengikuti batas kata |
 | `paket-index.html`, `course.js`, `course.css`, `scorm-api.js`, `karakter.js`, `lipsync.js` | **Template** yang disalin ke setiap paket SCORM (`paket-index.html` menjadi `index.html` di dalam zip) |
 | `store.js`, `util.js` | Penyimpanan IndexedDB & fungsi bantu |

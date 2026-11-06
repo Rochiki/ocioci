@@ -17,6 +17,7 @@ export const POSES = ['auto', 'diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'se
 /** Karakter ilustrasi (gambar): nama berkas yang ikut masuk paket bila dipilih. */
 export const FOTO_CHARS = ['safee', 'safri', 'helen', 'vira', 'shendi', 'romi'];
 export const fotoFiles = (id) => ['diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'serius'].flatMap((p) => [0, 1, 2].map((m) => `${id}-${p}-${m}.webp`));
+export const BUTTON_ACTIONS = ['start', 'next', 'prev', 'pause', 'replay', 'goto', 'link', 'info', 'finish'];
 export const TEXT_SIZES = ['auto', 'normal', 'besar', 'sangat'];
 export const SLIDE_TYPES = ['content', 'image', 'video', 'html', 'flip', 'hotspot', 'quiz', 'sort'];
 
@@ -105,6 +106,29 @@ const extOf = (name = '', mime = '') => {
   }[(mime || '').split(';')[0]] || 'bin';
 };
 
+/** Bersihkan tombol aksi slide: hanya aksi dikenal, tautan http(s)/mailto/tel, tujuan lompat harus ada. */
+export function cleanButtons(list, slides = []) {
+  const idOf = (x) => String(x.id).replace(/[^A-Za-z0-9_-]/g, '_');
+  const out = [];
+  for (const b of Array.isArray(list) ? list : []) {
+    if (!b || !BUTTON_ACTIONS.includes(b.action) || out.length >= 6) continue;
+    const o = { action: b.action, label: String(b.label || '').trim().slice(0, 40) };
+    if (b.action === 'goto') {
+      const t = slides.find((x) => String(x.id) === String(b.target));
+      if (!t) continue;
+      o.target = idOf(t);
+    }
+    if (b.action === 'link') {
+      const u = String(b.url || '').trim();
+      if (!/^(https?:\/\/|mailto:|tel:)/i.test(u)) continue;
+      o.url = u;
+    }
+    if (b.action === 'info') { o.title = String(b.title || '').trim().slice(0, 80); o.text = String(b.text || '').slice(0, 2000); if (!o.text && !o.title) continue; }
+    out.push(o);
+  }
+  return out;
+}
+
 /**
  * Ubah proyek Builder menjadi data kursus (COURSE_DATA).
  * @param {object} project
@@ -121,6 +145,9 @@ export async function toCourseData(project, putAsset, putHtml) {
     if (TEXT_SIZES.includes(s.textSize)) base.textSize = s.textSize;
     if (+s.textMin > 1) base.textMin = Math.min(1.8, +s.textMin);
     if (POSES.includes(s.pose) && s.pose !== 'auto') base.pose = s.pose;
+    if (s.who === 'none' || (typeof s.who === 'string' && /^[a-z]{3,12}$/.test(s.who) && s.who !== 'sendiri')) base.who = s.who;
+    const btns = cleanButtons(s.buttons, project.slides);
+    if (btns.length) base.buttons = btns;
     base.audio = await a(s.audio, `narasi-${n}`);
     if (base.audio && typeof s.lip === 'string' && /^[012]+$/.test(s.lip) && s.lip.length < 20000) base.lip = s.lip;
     let o;
@@ -165,7 +192,7 @@ export async function toCourseData(project, putAsset, putHtml) {
     on: true, who: pr.who || 'raka', name: pr.who === 'sendiri' ? (pr.name || '') : '', pos: pr.pos === 'kiri' ? 'kiri' : 'kanan', size: ['kecil', 'besar'].includes(pr.size) ? pr.size : 'sedang',
     img: pr.who === 'sendiri' ? await a(pr.img, 'karakter') : null,
     imgOpen: pr.who === 'sendiri' ? await a(pr.imgOpen, 'karakter-bicara') : null,
-  } : { on: false };
+  } : { on: false, pos: pr.pos === 'kiri' ? 'kiri' : 'kanan', size: ['kecil', 'besar'].includes(pr.size) ? pr.size : 'sedang' };
   if (presenter.on && pr.who === 'sendiri' && !presenter.img) presenter.on = false;
   return {
     title: (project.title || '').trim(),
@@ -253,10 +280,13 @@ export async function buildPackage(project, { template, JSZip = globalThis.JSZip
   zip.file('assets/course.js', template['course.js']);
   zip.file('assets/karakter.js', template['karakter.js']);
   zip.file('assets/lipsync.js', template['lipsync.js']);
-  if (data.presenter?.on && FOTO_CHARS.includes(data.presenter.who)) {
+  const usedChars = new Set();
+  if (data.presenter?.on && FOTO_CHARS.includes(data.presenter.who)) usedChars.add(data.presenter.who);
+  for (const sl of data.slides) if (FOTO_CHARS.includes(sl.who)) usedChars.add(sl.who);
+  if (usedChars.size) {
     if (typeof template.__bin !== 'function') throw new Error('Gambar karakter tidak tersedia untuk paket ini.');
     onProgress('Menyalin gambar karakter…');
-    for (const f of fotoFiles(data.presenter.who)) zip.file(`assets/${f}`, await template.__bin(f));
+    for (const id of usedChars) for (const f of fotoFiles(id)) zip.file(`assets/${f}`, await template.__bin(f));
   }
 
   const files = Object.keys(zip.files).filter((f) => !zip.files[f].dir);

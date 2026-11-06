@@ -9,6 +9,7 @@ import { loadTemplate, buildPackage, validateProject, toCourseData, wrapHtml, pr
 import { importFiles, ACCEPT_ALL, isGenericName } from './importers.js';
 import { BrowserTTS, Recorder, EdgeTTS, PiperTTS, EdgeDirectTTS, PIPER_VOICES, cleanForSpeech, normalizeServerUrl } from './tts.js';
 import { openCropper } from './crop.js';
+import { personaPanel, buttonsPanel } from './slidetools.js';
 
 const KEY = 'proyek-v2';
 const TTS_KEY = 'studio-scorm:tts-v2';
@@ -176,10 +177,27 @@ function renderEditor() {
     h('button', { class: 'icon-btn', type: 'button', title: 'Turunkan', 'aria-label': 'Turunkan slide', disabled: idx === project.slides.length - 1, onclick: () => move(1) }, icon('down')),
     h('button', { class: 'icon-btn', type: 'button', title: 'Duplikat', 'aria-label': 'Duplikat slide', onclick: duplicate }, icon('copy')),
     h('button', { class: 'icon-btn danger', type: 'button', title: 'Hapus', 'aria-label': 'Hapus slide', onclick: removeSlide }, icon('trash')));
-  ed.replaceChildren(h('div', { class: 'editor-card' }, head, ...slideEditor(s, ctx), slideLook(s)), narrationPanel(s),
+  ed.replaceChildren(h('div', { class: 'editor-card' }, head, ...slideEditor(s, ctx), slideLook(s)), narrationPanel(s), personaPanel(s, personaDeps), buttonsPanel(s, { ctx, project, toast }),
     h('div', { class: 'editor-foot' },
       h('button', { class: 'btn', type: 'button', disabled: idx === 0, onclick: () => select(project.slides[idx - 1].id) }, icon('up'), 'Slide sebelumnya'),
       h('button', { class: 'btn btn-primary', type: 'button', onclick: openAddPicker }, icon('plus'), 'Tambah slide')));
+}
+
+const personaDeps = {
+  ctx, get project() { return project; }, get chars() { return window.StudioKarakter?.list || {}; }, toast,
+  get STYLES() { return STYLES; }, ttsCfg, makeMp3, trySample, redraw: () => renderEditor(),
+};
+/** Dengarkan contoh suara pilihan slide (potongan pendek naskahnya). */
+async function trySample(s, btn) {
+  const full = cleanForSpeech(narrationFor(s)) || 'Halo! Selamat datang di pelatihan keselamatan kerja.';
+  const t = full.length > 140 ? `${full.slice(0, 140).replace(/\s+\S*$/, '')}.` : full;
+  const eng = s.voice?.v === 'piper' || (!s.voice?.v && engineOf() === 'piper');
+  if (eng && !(await confirmPiperDownload())) return;
+  const old = [...btn.childNodes]; btn.disabled = true; btn.replaceChildren(h('span', { class: 'spinner sm' }), 'Membuat contoh…');
+  try {
+    const r = await synthesize(t, {}, s.voice);
+    const a = new Audio(URL.createObjectURL(r.blob)); await a.play();
+  } catch (e) { console.error(e); toast(e.message, 'error'); } finally { btn.disabled = false; btn.replaceChildren(...old); }
 }
 
 // ================================================================ tampilan per slide: ukuran teks & pose karakter
@@ -191,7 +209,7 @@ function slideLook(s) {
   const sizeSeg = hasText ? h('div', { class: 'field' }, h('label', {}, 'Ukuran teks'),
     segmented(s, 'textSize', ctx, [['', 'Ikut kursus'], ['auto', 'Pas layar'], ['normal', 'Normal'], ['besar', 'Besar'], ['sangat', 'Sangat besar']], { label: 'Ukuran teks' }),
     h('div', { class: 'hint' }, s.fontPt ? `Di PowerPoint: ±${s.fontPt} pt. "Pas layar" memperbesar teks sampai memenuhi layar peserta (seperti AutoFit PowerPoint).` : '"Pas layar" memperbesar teks sampai memenuhi layar peserta (slide materi). Bawaan kursus diatur di tab Gaya.')) : null;
-  const poseSel = project.presenter?.on ? field('Gaya karakter di slide ini', h('select', { onchange: (e) => { s.pose = e.target.value; ctx.changed(); } },
+  const poseSel = (project.presenter?.on || (s.who && s.who !== 'none')) ? field('Gaya karakter di slide ini', h('select', { onchange: (e) => { s.pose = e.target.value; ctx.changed(); } },
     POSE_OPTS.map(([v, l]) => h('option', { value: v, selected: (s.pose || 'auto') === v }, l)))) : null;
   return h('details', { class: 'mini look', open: !!(s.textSize || (s.pose && s.pose !== 'auto')) },
     h('summary', {}, icon('text'), 'Tampilan: ukuran teks', project.presenter?.on ? ' & karakter' : ''), h('div', { class: 'look-body' }, sizeSeg, poseSel));
@@ -310,8 +328,19 @@ const STYLES = {
 const styleOf = (cfg) => STYLES[cfg.style] || STYLES.normal;
 const clampN = (v, a, c) => Math.max(a, Math.min(c, v));
 
-async function synthesize(text, { onStatus = () => {}, onProgress = () => {} } = {}) {
-  const cfg = ttsCfg();
+/** Pilihan suara per slide (s.voice) menimpa pengaturan tab Suara hanya untuk slide itu. */
+function withOverride(cfg, ov) {
+  if (!ov) return cfg;
+  const c = { ...cfg };
+  if (ov.v === 'piper') c.engine = 'piper';
+  else if (ov.v) { c.engine = c.engine === 'server' ? 'server' : 'edge'; c.voice = ov.v; }
+  if (ov.style) c.style = ov.style;
+  if (ov.rate != null) c.rate = ov.rate;
+  if (ov.pitch != null) c.pitch = ov.pitch;
+  return c;
+}
+async function synthesize(text, { onStatus = () => {}, onProgress = () => {} } = {}, override = null) {
+  const cfg = withOverride(ttsCfg(), override);
   const engine = engineOf(cfg);
   const st = styleOf(cfg);
   const rate = clampN((+cfg.rate || 0) + st.rate, -50, 50);
@@ -328,7 +357,7 @@ async function synthesize(text, { onStatus = () => {}, onProgress = () => {} } =
       return { ...r, label: `MP3 · ${voiceLabel(cfg.voice)} (Microsoft)` };
     } catch (e) {
       console.warn(e);
-      setTtsCfg({ engine: 'piper' });
+      if (!override) setTtsCfg({ engine: 'piper' });
       toast(`${e.message} Beralih otomatis ke "Suara AI di browser".`, 'error');
       if (!(await confirmPiperDownload())) throw new Error('Dibatalkan.');
     }
@@ -340,13 +369,13 @@ async function synthesize(text, { onStatus = () => {}, onProgress = () => {} } =
 async function makeMp3(s, btn, { quiet = false } = {}) {
   const t = cleanForSpeech(narrationFor(s));
   if (!t) { if (!quiet) toast('Slide ini belum punya teks untuk dibacakan.', 'error'); return false; }
-  if (engineOf() === 'piper' && !(await confirmPiperDownload())) return false;
+  if (engineOf(withOverride(ttsCfg(), s.voice)) === 'piper' && !(await confirmPiperDownload())) return false;
   const old = btn ? [...btn.childNodes] : null;
   let status = 'Membuat suara…', pct = null;
   const paint = () => { if (btn) btn.replaceChildren(h('span', { class: 'spinner sm' }), pct != null && pct < 1 ? `${status} ${Math.round(pct * 100)}%` : status); };
   if (btn) { btn.disabled = true; paint(); }
   try {
-    const r = await synthesize(t, { onStatus: (x) => { status = x; paint(); }, onProgress: (x) => { pct = x; paint(); } });
+    const r = await synthesize(t, { onStatus: (x) => { status = x; paint(); }, onProgress: (x) => { pct = x; paint(); } }, s.voice);
     s.audio = { data: r.blob, name: r.name, type: r.type, source: r.label };
     ctx.changed({ list: true });
     return true;
@@ -397,7 +426,7 @@ function schedulePreview(immediate = false) {
 }
 /** Gerak bibir: baca irama suara MP3 tiap slide (+ vokal dari teks). Disimpan di slide.lip, dihitung ulang bila audio/teks berubah. */
 async function ensureLip(p) {
-  if (!window.StudioLip || !p?.presenter?.on) return;
+  if (!window.StudioLip || !(p?.presenter?.on || p?.slides?.some((x) => x.who && x.who !== 'none'))) return;
   for (const s of p.slides) {
     if (!s.audio?.data) { delete s.lip; delete s.lipSig; continue; }
     const text = narrationFor(s);

@@ -357,3 +357,16 @@ body.full-page #app { height: 100vh; height: 100dvh; min-height: 0; }
   .presenter.size-kecil { --ph: 100px; } .presenter.size-besar { --ph: 160px; }
 }
 @media print { .presenter { display: none !important; } }
+
+/* ---------- tombol aksi di dalam slide (Mulai, Lanjut, Jeda, Info, ...) ---------- */
+.slide-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 22px 0 6px; }
+.slide-actions .btn.act { min-height: 46px; padding: 10px 20px; font-weight: 700; }
+.slide-actions .btn.act[aria-pressed="true"] { outline: 2px solid var(--accent); }
+.full-media .slide-actions { position: absolute; left: 8px; right: 8px; bottom: 12px; z-index: 4; margin: 0; pointer-events: none; }
+.full-media .slide-actions .btn { pointer-events: auto; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+#navHint.flash { color: #b42318; font-weight: 700; }
+.act-modal { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.act-card { position: relative; background: var(--surface); color: var(--ink); max-width: 480px; width: 100%; max-height: 80dvh; overflow: auto; border-radius: 18px; padding: 24px 22px 20px; box-shadow: 0 20px 50px rgba(0,0,0,.35); animation: zoom .25s ease both; }
+.act-card h3 { margin: 0 34px 10px 0; }
+.act-card .act-x { position: absolute; top: 10px; right: 10px; }
+.act-card .act-ok { margin-top: 14px; }

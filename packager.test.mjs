@@ -145,3 +145,24 @@ test('jalur gerak bibir (lip) ikut ke data kursus hanya bila slide punya audio; 
   assert.equal(d.slides[1].lip, undefined);
   if (d.slides[2]) assert.equal(d.slides[2].lip, undefined);
 });
+
+test('karakter per slide: frame semua karakter yang dipakai ikut paket, tombol dibersihkan', async () => {
+  const p = sample();
+  p.presenter = { on: false };
+  p.slides[0].who = 'helen';
+  p.slides[1].who = 'none';
+  p.slides[1].voice = { v: 'id-ID-ArdiNeural' };
+  p.slides[0].buttons = [
+    { action: 'start', label: ' Mulai ' }, { action: 'goto', target: p.slides[2].id }, { action: 'goto', target: 'tidak-ada' },
+    { action: 'link', url: 'javascript:alert(1)' }, { action: 'link', url: 'https://contoh.id' },
+    { action: 'info', title: 'Tips', text: 'Pakai APD' }, { action: 'info' }, { action: 'hack' },
+  ];
+  const { data, files } = await buildPackage(p, { template, JSZip });
+  const d = await readData(await JSZip.loadAsync(data));
+  assert.ok(files.includes('assets/helen-diam-0.webp') && !files.some((f) => f.includes('romi-')));
+  assert.equal(d.slides[0].who, 'helen'); assert.equal(d.slides[1].who, 'none');
+  assert.deepEqual(d.slides[0].buttons.map((b) => b.action), ['start', 'goto', 'link', 'info']);
+  assert.equal(d.slides[0].buttons[0].label, 'Mulai');
+  assert.equal(d.slides[0].buttons[2].url, 'https://contoh.id');
+  assert.equal(d.presenter.on, false);
+});

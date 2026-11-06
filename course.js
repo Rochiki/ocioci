@@ -181,7 +181,30 @@
   function stopNarration() {
     try { audio.pause(); } catch (e) {}
     if (window.speechSynthesis) speechSynthesis.cancel();
-    speaking = false; narrationOn = false; syncVoiceBtn(); talk(false);
+    speaking = false; narrationOn = false; narrPaused = false; syncVoiceBtn(); talk(false);
+  }
+  var narrPaused = false;
+  /** Jeda / lanjutkan narasi di titik yang sama (bukan mengulang dari awal). */
+  function togglePause() {
+    var s = slides[state.i];
+    if (!narrationOn && !narrPaused) { startNarration(); return; }
+    if (narrPaused) {
+      narrPaused = false;
+      if (s && s.audio) { var p = audio.play(); if (p && p.catch) p.catch(function () {}); }
+      else if (window.speechSynthesis) { speechSynthesis.resume(); talk('tts'); }
+    } else {
+      narrPaused = true;
+      if (s && s.audio) audio.pause();
+      else if (window.speechSynthesis) { speechSynthesis.pause(); talk(false); }
+    }
+    syncActs();
+  }
+  function syncActs() {
+    $$('[data-act="pause"]').forEach(function (b) {
+      var lab = b.querySelector('span');
+      if (lab) lab.textContent = narrPaused ? 'Lanjutkan narasi' : b.getAttribute('data-label');
+      b.setAttribute('aria-pressed', String(narrPaused));
+    });
   }
   function syncVoiceBtn() {
     var b = $('#btnVoice'); if (!b) return;
@@ -226,6 +249,74 @@
   }
   function toggleNarration() { if (narrationOn) stopNarration(); else startNarration(); }
 
+
+  // ------------------------------------------------------------ tombol aksi di dalam slide
+  var ACT_DEF = {
+    start: ['Mulai', 'next', 1], next: ['Lanjut', 'next', 1], prev: ['Kembali', 'prev', 0], pause: ['Jeda narasi', 'sound', 0],
+    replay: ['Ulangi narasi', 'sound', 0], goto: ['Lompat', 'next', 0], link: ['Buka tautan', 'next', 0], info: ['Info', 'menu', 0], finish: ['Selesai', 'check', 1]
+  };
+  function safeUrl(u) { return /^(https?:\/\/|mailto:|tel:)/i.test(String(u || '').trim()) ? String(u).trim() : ''; }
+  function actionsHtml(s) {
+    var list = (s.buttons || []).filter(function (b) { return b && ACT_DEF[b.action]; });
+    if (!list.length) return '';
+    return '<div class="slide-actions" role="group" aria-label="Tombol aksi">' + list.map(function (b, k) {
+      var d = ACT_DEF[b.action], label = (b.label || '').trim() || d[0];
+      return '<button type="button" class="btn act' + (d[2] ? ' primary' : '') + '" data-act="' + k + '" data-label="' + esc(label) + '">' +
+        (b.action === 'prev' ? icon(d[1]) : '') + '<span>' + esc(label) + '</span>' + (b.action !== 'prev' && b.action !== 'pause' && b.action !== 'replay' && b.action !== 'info' ? icon(d[1]) : '') + '</button>';
+    }).join('') + '</div>';
+  }
+  function hintFlash(msg) {
+    var h = $('#navHint'); if (!h) return;
+    h.textContent = msg; h.classList.add('flash');
+    setTimeout(function () { h.classList.remove('flash'); refreshNav(); }, 2200);
+  }
+  function goSafe(idx, dir) {
+    if (idx < 0) return;
+    if (idx >= slides.length) { return finishSafe(); }
+    if (!PREVIEW && locked(idx)) { hintFlash(blockHint(slides[state.i]) || 'Selesaikan bagian ini dulu'); return; }
+    show(idx, { dir: dir || (idx >= state.i ? 'maju' : 'mundur') });
+  }
+  function finishSafe() {
+    var cur = slides[state.i];
+    if (!PREVIEW && C.navigation === 'berurutan' && !isDone(cur)) { hintFlash(blockHint(cur) || 'Selesaikan bagian ini dulu'); return; }
+    renderEnd();
+  }
+  function openInfo(b) {
+    var old = document.getElementById('actModal'); if (old) old.remove();
+    var m = document.createElement('div');
+    m.id = 'actModal'; m.className = 'act-modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true');
+    m.innerHTML = '<div class="act-card"><button type="button" class="icon-btn act-x" aria-label="Tutup">' + icon('x') + '</button>' +
+      '<h3>' + esc(b.title || b.label || 'Info') + '</h3><div class="body">' + md(b.text || '') + '</div>' +
+      '<button type="button" class="btn primary act-ok">Mengerti</button></div>';
+    var close = function () { m.remove(); document.removeEventListener('keydown', onKey, true); };
+    var onKey = function (e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
+    m.onclick = function (e) { if (e.target === m) close(); };
+    m.querySelector('.act-x').onclick = close; m.querySelector('.act-ok').onclick = close;
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(m);
+    m.querySelector('.act-ok').focus();
+  }
+  function runAction(s, b) {
+    switch (b.action) {
+      case 'start': case 'next': goSafe(state.i + 1, 'maju'); break;
+      case 'prev': goSafe(state.i - 1, 'mundur'); break;
+      case 'pause': togglePause(); break;
+      case 'replay': stopNarration(); if (canNarrate(s)) startNarration(); break;
+      case 'goto': {
+        var k = -1; slides.forEach(function (x, n) { if (x.id === b.target) k = n; });
+        if (k > -1) goSafe(k); break;
+      }
+      case 'link': { var u = safeUrl(b.url); if (u) window.open(u, '_blank', 'noopener'); break; }
+      case 'info': openInfo(b); break;
+      case 'finish': finishSafe(); break;
+    }
+  }
+  function bindActions(s) {
+    var list = (s.buttons || []).filter(function (b) { return b && ACT_DEF[b.action]; });
+    $$('[data-act]').forEach(function (el) { el.onclick = function () { runAction(s, list[+el.getAttribute('data-act')]); }; });
+    syncActs();
+  }
+
   // ------------------------------------------------------------ ukuran teks (pas layar)
   var SIZES = { normal: 1, besar: 1.3, sangat: 1.6 };
   function setFs(main, f) {
@@ -266,15 +357,25 @@
 
   // ------------------------------------------------------------ karakter presenter
   var P = { el: null, cfg: null, mode: false, raf: 0, level: 0, ctx: null, an: null, buf: null, srcAttached: false, t0: 0 };
-  function presenterOn() { return !!(C && C.presenter && C.presenter.on && (C.presenter.img || (window.StudioKarakter && C.presenter.who))); }
-  function buildPresenter() {
-    var sig = presenterOn() ? JSON.stringify(C.presenter) : '';
+  /** Karakter yang berlaku untuk sebuah slide: pilihan slide (s.who) mengalahkan pengaturan kursus. */
+  function effPresenter(s) {
+    var g = C && C.presenter || {}, w = s && s.who, K = window.StudioKarakter;
+    if (w === 'none') return null;
+    if (w && K && K.list[w]) return { on: true, who: w, pos: g.pos === 'kiri' ? 'kiri' : 'kanan', size: g.size || 'sedang' };
+    if (!g.on) return null;
+    return (g.img || (K && g.who)) ? g : null;
+  }
+  function anyPresenter() { return !!(C && ((C.presenter && C.presenter.on) || slides.some(function (x) { return x.who && x.who !== 'none'; }))); }
+  function buildPresenter(slide) {
+    var cfgNow = effPresenter(slide);
+    var sig = cfgNow ? JSON.stringify(cfgNow) : '';
+    P.cfg = cfgNow;
     if (P.el && sig === P.sig) return; // pratinjau Builder: jangan bangun ulang bila tidak berubah
     if (P.el) { P.el.remove(); P.el = null; }
     P.sig = sig;
     document.body.classList.remove('with-presenter');
     if (!sig) return;
-    var c = C.presenter;
+    var c = cfgNow;
     var inner = c.img
       ? '<div class="own ' + (c.imgOpen ? 'two' : 'one') + '"><img class="closed" src="' + esc(c.img) + '" alt="">' + (c.imgOpen ? '<img class="open" src="' + esc(c.imgOpen) + '" alt="">' : '') + '</div>'
       : window.StudioKarakter.svg(c.who);
@@ -296,7 +397,7 @@
     P.el.classList.toggle('off', hide);
     P.el.classList.toggle('at-start', where === 'start');
     document.body.classList.toggle('with-presenter', !hide && where !== 'start');
-    var foto = window.StudioKarakter && C.presenter && (window.StudioKarakter.list[C.presenter.who] || {}).foto;
+    var foto = window.StudioKarakter && P.cfg && (window.StudioKarakter.list[P.cfg.who] || {}).foto;
     if (name === 'serius' && !foto) name = 'tunjuk'; // karakter vektor tidak punya pose serius
     if (!hide) P.el.setAttribute('data-pose', name);
     document.body.style.setProperty('--pw', P.el.offsetWidth + 'px');
@@ -306,7 +407,7 @@
     if (s.pose && s.pose !== 'auto') return s.pose;
     if (isFull(s)) return 'sembunyi'; // media layar penuh: karakter tidak menutupi
     if (idx === 0) return 'lambai';
-    var fk = window.StudioKarakter && C.presenter && (window.StudioKarakter.list[C.presenter.who] || {}).foto;
+    var fk = window.StudioKarakter && P.cfg && (window.StudioKarakter.list[P.cfg.who] || {}).foto;
     if (fk && /bahaya|peringatan|awas|waspada|dilarang|larangan|fatal|kecelakaan/i.test((s.title || '') + ' ' + (s.body || ''))) return 'serius';
     if (s.type === 'quiz' || s.type === 'sort') return state.d[s.id] ? (sortOrQuizRight(s) ? 'jempol' : 'pikir') : 'pikir';
     if (idx === slides.length - 1) return 'jempol';
@@ -334,7 +435,7 @@
   }
   /** AudioContext dibuat & dijalankan pada ketukan pertama peserta (aturan autoplay browser). */
   function unlockAudio() {
-    if (!presenterOn()) return;
+    if (!anyPresenter()) return;
     try {
       var AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
@@ -448,12 +549,14 @@
     var dir = opts.dir || 'maju';
     app.innerHTML = header() + drawer() +
       '<main class="slide type-' + esc(s.type) + (isFull(s) ? ' full-media' : '') + ' enter-' + dir + '" id="slide" tabindex="-1">' + r.html(s) +
-      '<aside class="captions" id="captions"' + (captionsOn ? '' : ' hidden') + '><strong>Teks narasi</strong><p>' + esc(narrationText(s)) + '</p></aside></main>' +
+      actionsHtml(s) + '<aside class="captions" id="captions"' + (captionsOn ? '' : ' hidden') + '><strong>Teks narasi</strong><p>' + esc(narrationText(s)) + '</p></aside></main>' +
       footer();
     document.body.classList.toggle('full-page', isFull(s));
     bindFrame();
     if (r.bind) r.bind(s, $('#slide'));
+    buildPresenter(s);
     pose(autoPose(s, state.i));
+    bindActions(s);
     fitText();
     $$('img', $('#slide')).forEach(function (im) { if (!im.complete) im.addEventListener('load', refit, { once: true }); });
     if (!opts.noFocus) { var sl = $('#slide'); if (sl) sl.focus({ preventScroll: true }); }
@@ -860,6 +963,7 @@
       '</div>' +
       (S.connected || PREVIEW ? '' : '<p class="note">Mode mandiri: tidak terhubung ke LMS. Progres disimpan di browser ini saja.</p>') +
       '</div></section>';
+    buildPresenter(null);
     pose('lambai', 'start');
     if (resume) {
       $('#btnResume').onclick = function () { show(state.i); };
@@ -931,7 +1035,7 @@
     C.passingScore = C.passingScore == null ? 80 : +C.passingScore;
     applyTheme();
     stopNarration();
-    buildPresenter();
+    buildPresenter(null);
     if (!slides.length) { app.innerHTML = '<section class="start"><div class="start-card"><h1>' + esc(C.title || 'Kursus') + '</h1><p class="lead">Belum ada slide.</p></div></section>'; return; }
     if (PREVIEW) {
       state = (opts && opts.keepState && state) ? state : freshState();
