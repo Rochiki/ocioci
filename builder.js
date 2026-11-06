@@ -182,7 +182,7 @@ function renderEditor() {
 }
 
 // ================================================================ tampilan per slide: ukuran teks & pose karakter
-const POSE_OPTS = [['auto', 'Otomatis'], ['tunjuk', 'Menunjuk'], ['lambai', 'Melambai'], ['jempol', 'Jempol'], ['pikir', 'Berpikir'], ['diam', 'Diam'], ['sembunyi', 'Sembunyikan']];
+const POSE_OPTS = [['auto', 'Otomatis'], ['tunjuk', 'Menunjuk'], ['lambai', 'Melambai'], ['jempol', 'Jempol'], ['pikir', 'Berpikir'], ['serius', 'Serius / tegas (peringatan)'], ['diam', 'Diam'], ['sembunyi', 'Sembunyikan']];
 function slideLook(s) {
   const hasText = !['video', 'html'].includes(s.type);
   if (!hasText && !project.presenter?.on) return null;

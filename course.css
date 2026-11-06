@@ -313,6 +313,15 @@ figure.full figcaption { color: var(--muted); margin-top: 10px; font-size: 15px;
 @keyframes krWave { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(14deg); } }
 @keyframes krPoint { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-5px); } }
 @keyframes krPop { from { transform: scale(.4); } }
+/* karakter ilustrasi (gambar): satu bingkai tampil sesuai pose & bentuk mulut */
+.presenter .kr-foto { position: relative; transform-origin: 50% 100%; animation: krBreath 3.6s ease-in-out infinite; }
+.kr-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: bottom center; opacity: 0; user-select: none; -webkit-user-drag: none; }
+.presenter[data-pose="diam"][data-m="0"] .kr-foto img[data-p="diam"][data-m="0"], .presenter[data-pose="diam"][data-m="1"] .kr-foto img[data-p="diam"][data-m="1"], .presenter[data-pose="diam"][data-m="2"] .kr-foto img[data-p="diam"][data-m="2"],
+.presenter[data-pose="tunjuk"][data-m="0"] .kr-foto img[data-p="tunjuk"][data-m="0"], .presenter[data-pose="tunjuk"][data-m="1"] .kr-foto img[data-p="tunjuk"][data-m="1"], .presenter[data-pose="tunjuk"][data-m="2"] .kr-foto img[data-p="tunjuk"][data-m="2"],
+.presenter[data-pose="lambai"][data-m="0"] .kr-foto img[data-p="lambai"][data-m="0"], .presenter[data-pose="lambai"][data-m="1"] .kr-foto img[data-p="lambai"][data-m="1"], .presenter[data-pose="lambai"][data-m="2"] .kr-foto img[data-p="lambai"][data-m="2"],
+.presenter[data-pose="jempol"][data-m="0"] .kr-foto img[data-p="jempol"][data-m="0"], .presenter[data-pose="jempol"][data-m="1"] .kr-foto img[data-p="jempol"][data-m="1"], .presenter[data-pose="jempol"][data-m="2"] .kr-foto img[data-p="jempol"][data-m="2"],
+.presenter[data-pose="pikir"][data-m="0"] .kr-foto img[data-p="pikir"][data-m="0"], .presenter[data-pose="pikir"][data-m="1"] .kr-foto img[data-p="pikir"][data-m="1"], .presenter[data-pose="pikir"][data-m="2"] .kr-foto img[data-p="pikir"][data-m="2"],
+.presenter[data-pose="serius"][data-m="0"] .kr-foto img[data-p="serius"][data-m="0"], .presenter[data-pose="serius"][data-m="1"] .kr-foto img[data-p="serius"][data-m="1"], .presenter[data-pose="serius"][data-m="2"] .kr-foto img[data-p="serius"][data-m="2"] { opacity: 1; }
 /* karakter unggahan sendiri: 1 gambar (bergoyang saat bicara) atau 2 gambar (mulut tutup/buka) */
 .presenter .own { position: relative; width: 100%; height: 100%; }
 .presenter .own img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: bottom center; }

@@ -290,6 +290,8 @@
     P.el.classList.toggle('off', hide);
     P.el.classList.toggle('at-start', where === 'start');
     document.body.classList.toggle('with-presenter', !hide && where !== 'start');
+    var foto = window.StudioKarakter && C.presenter && (window.StudioKarakter.list[C.presenter.who] || {}).foto;
+    if (name === 'serius' && !foto) name = 'tunjuk'; // karakter vektor tidak punya pose serius
     if (!hide) P.el.setAttribute('data-pose', name);
     document.body.style.setProperty('--pw', P.el.offsetWidth + 'px');
     document.body.style.setProperty('--ph-h', P.el.offsetHeight + 'px');
@@ -297,6 +299,8 @@
   function autoPose(s, idx) {
     if (s.pose && s.pose !== 'auto') return s.pose;
     if (idx === 0) return 'lambai';
+    var fk = window.StudioKarakter && C.presenter && (window.StudioKarakter.list[C.presenter.who] || {}).foto;
+    if (fk && /bahaya|peringatan|awas|waspada|dilarang|larangan|fatal|kecelakaan/i.test((s.title || '') + ' ' + (s.body || ''))) return 'serius';
     if (s.type === 'quiz' || s.type === 'sort') return state.d[s.id] ? (sortOrQuizRight(s) ? 'jempol' : 'pikir') : 'pikir';
     if (idx === slides.length - 1) return 'jempol';
     if (s.type === 'hotspot' || s.type === 'flip') return 'tunjuk';

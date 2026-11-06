@@ -480,6 +480,9 @@ details.look summary { display: flex; align-items: center; gap: 6px; }
 .char-pic .kr { width: 100%; height: 100%; }
 .char-pic img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .own-pic .ic { width: 30px; height: 30px; color: var(--accent); }
+.char-pic .kr-foto { position: relative; width: 100%; height: 100%; }
+.char-pic .kr-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; }
+.char-pic .kr-foto img[data-p="diam"][data-m="0"] { opacity: 1; }
 .presenter-thumb .kr .pose { display: none; }
 .presenter-thumb .kr .pose-lambai { display: inline; }
 .presenter-thumb .kr-mouth > * { display: none; }

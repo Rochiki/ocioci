@@ -13,7 +13,10 @@ import { buildManifest } from './manifest.js';
 import { escapeXml, slugify, normalizeZipPath } from './util.js';
 
 export const TEMPLATE_FILES = ['paket-index.html', 'course.css', 'scorm-api.js', 'course.js', 'karakter.js'];
-export const POSES = ['auto', 'diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'sembunyi'];
+export const POSES = ['auto', 'diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'serius', 'sembunyi'];
+/** Karakter ilustrasi (gambar): nama berkas yang ikut masuk paket bila dipilih. */
+export const FOTO_CHARS = ['laras'];
+export const fotoFiles = (id) => ['diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'serius'].flatMap((p) => [0, 1, 2].map((m) => `${id}-${p}-${m}.webp`));
 export const TEXT_SIZES = ['auto', 'normal', 'besar', 'sangat'];
 export const SLIDE_TYPES = ['content', 'image', 'video', 'html', 'flip', 'hotspot', 'quiz', 'sort'];
 
@@ -25,6 +28,12 @@ export async function loadTemplate(base = './') {
     if (!res.ok) throw new Error(`File ${name} tidak ditemukan di repo (${res.status}). Pastikan semua file sudah diunggah.`);
     out[name] = await res.text();
   }
+  // Berkas biner karakter ilustrasi diambil hanya bila dipakai.
+  Object.defineProperty(out, '__bin', { enumerable: false, value: async (name) => {
+    const res = await fetch(base + name, { cache: 'no-cache' });
+    if (!res.ok) throw new Error(`File karakter ${name} tidak ditemukan di repo (${res.status}). Unggah semua file laras-*.webp.`);
+    return new Uint8Array(await res.arrayBuffer());
+  } });
   return out;
 }
 
@@ -241,6 +250,11 @@ export async function buildPackage(project, { template, JSZip = globalThis.JSZip
   zip.file('assets/scorm-api.js', template['scorm-api.js']);
   zip.file('assets/course.js', template['course.js']);
   zip.file('assets/karakter.js', template['karakter.js']);
+  if (data.presenter?.on && FOTO_CHARS.includes(data.presenter.who)) {
+    if (typeof template.__bin !== 'function') throw new Error('Gambar karakter tidak tersedia untuk paket ini.');
+    onProgress('Menyalin gambar karakter…');
+    for (const f of fotoFiles(data.presenter.who)) zip.file(`assets/${f}`, await template.__bin(f));
+  }
 
   const files = Object.keys(zip.files).filter((f) => !zip.files[f].dir);
   const identifier = `${slugify(data.title)}-${String(project.id || '').replace(/[^A-Za-z0-9]/g, '').slice(-6) || 'kursus'}`;

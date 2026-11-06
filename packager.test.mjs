@@ -9,6 +9,7 @@ import { revive } from './build-sample.mjs';
 
 const root = new URL('./', import.meta.url);
 const template = Object.fromEntries(await Promise.all(TEMPLATE_FILES.map(async (f) => [f, await readFile(new URL(f, root), 'utf8')])));
+Object.defineProperty(template, '__bin', { enumerable: false, value: async (n) => new Uint8Array(await readFile(new URL(n, root))) });
 const { project: raw } = JSON.parse(await readFile(new URL('contoh-apd.json', root), 'utf8'));
 const sample = () => revive(structuredClone(raw));
 const readData = async (zip) => { const js = await zip.file('assets/course-data.js').async('string'); return JSON.parse(js.slice(js.indexOf('{'), js.lastIndexOf('}') + 1)); };
@@ -109,4 +110,22 @@ test('karakter sendiri: gambar dikemas; tanpa gambar karakter dimatikan', async 
   p.presenter.img = null;
   d = await readData(await JSZip.loadAsync((await buildPackage(p, { template, JSZip, type: 'nodebuffer' })).data));
   assert.equal(d.presenter.on, false);
+});
+
+test('karakter ilustrasi (Laras): 18 gambar ikut ke paket & terdaftar di manifest', async () => {
+  const p = sample();
+  p.presenter = { on: true, who: 'laras', pos: 'kanan', size: 'sedang' };
+  p.slides[0].pose = 'serius';
+  const out = await buildPackage(p, { template, JSZip, type: 'nodebuffer' });
+  const zip = await JSZip.loadAsync(out.data);
+  for (const pose of ['diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'serius']) for (const m of [0, 1, 2]) {
+    assert.ok(zip.file(`assets/laras-${pose}-${m}.webp`), `laras-${pose}-${m}.webp`);
+  }
+  assert.match(await zip.file('imsmanifest.xml').async('string'), /assets\/laras-serius-2\.webp/);
+  const d = await readData(zip);
+  assert.equal(d.presenter.who, 'laras'); assert.equal(d.slides[0].pose, 'serius');
+  // karakter vektor tidak membawa gambar
+  p.presenter = { on: true, who: 'raka', pos: 'kanan', size: 'sedang' };
+  const z2 = await JSZip.loadAsync((await buildPackage(p, { template, JSZip, type: 'nodebuffer' })).data);
+  assert.equal(Object.keys(z2.files).filter((f) => f.includes('laras-')).length, 0);
 });

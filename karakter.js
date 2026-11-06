@@ -16,6 +16,17 @@
     dewi: { name: 'dr. Dewi', desc: 'Petugas kesehatan — jas putih', skin: '#f0c7a2', skinDark: '#d1a07a', hair: '#1f1611', style: 'sanggul', helmet: null, shirt: '#58b7b0', coat: '#ffffff', lashes: true, stetoskop: true },
   };
 
+  // Karakter ilustrasi (gambar, bukan vektor): 6 pose x 3 bentuk mulut = 18 bingkai, mis. laras-diam-0.webp
+  var BASE = (document.currentScript && document.currentScript.src || '').replace(/[^\/]*$/, '');
+  var FOTO_POSES = ['diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'serius'];
+  LIST.laras = { name: 'Laras', desc: 'Ilustrasi — rambut cokelat, kemeja batik, 6 ekspresi', foto: true };
+  function fotoSvg(id) {
+    var o = ['<div class="kr kr-foto" data-who="' + id + '" aria-hidden="true">'];
+    FOTO_POSES.forEach(function (p) { for (var m = 0; m < 3; m++) o.push('<img src="' + BASE + id + '-' + p + '-' + m + '.webp" alt="" draggable="false" data-p="' + p + '" data-m="' + m + '">'); });
+    o.push('</div>');
+    return o.join('');
+  }
+
   function shade(hex, k) {
     var n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
     var f = function (c) { return Math.max(0, Math.min(255, Math.round(k < 0 ? c * (1 + k) : c + (255 - c) * k))); };
@@ -24,6 +35,7 @@
 
   /** SVG lengkap satu karakter. */
   function svg(id) {
+    if (LIST[id] && LIST[id].foto) return fotoSvg(id);
     var c = LIST[id] || LIST.raka;
     var line = 'rgba(40,25,15,.28)';
     var top = c.coat || c.shirt;
