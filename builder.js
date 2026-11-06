@@ -304,12 +304,12 @@ async function synthesize(text, { onStatus = () => {}, onProgress = () => {} } =
   if (engine === 'server') {
     if (!cfg.url) throw new Error('Alamat server suara belum diisi. Buka tab Suara, atau pilih "Suara AI di browser".');
     onStatus('Menghubungi server…');
-    const blob = await new EdgeTTS(cfg.url).synthesize(text, { voice: cfg.voice || 'id-ID-GadisNeural', rate, pitch: +cfg.pitch || 0 });
+    const blob = await new EdgeTTS(cfg.url).synthesize(text, { voice: cfg.voice || 'id-ID-GadisNeural', rate, pitch: (+cfg.pitch || 0) * 5 });
     return { blob, name: 'narasi.mp3', type: 'audio/mpeg', label: `MP3 · ${voiceLabel(cfg.voice)}` };
   }
   if (engine === 'edge') {
     try {
-      const r = await EdgeDirectTTS.synthesize(text, { voice: cfg.voice || 'id-ID-GadisNeural', rate, pitch: +cfg.pitch || 0, onStatus });
+      const r = await EdgeDirectTTS.synthesize(text, { voice: cfg.voice || 'id-ID-GadisNeural', rate, pitch: (+cfg.pitch || 0) * 5, onStatus });
       return { ...r, label: `MP3 · ${voiceLabel(cfg.voice)} (Microsoft)` };
     } catch (e) {
       console.warn(e);
@@ -318,7 +318,7 @@ async function synthesize(text, { onStatus = () => {}, onProgress = () => {} } =
       if (!(await confirmPiperDownload())) throw new Error('Dibatalkan.');
     }
   }
-  const r = await PiperTTS.synthesize(text, { speed: 1 + rate / 100, onStatus, onProgress });
+  const r = await PiperTTS.synthesize(text, { speed: 1 + rate / 100, pitch: +cfg.pitch || 0, onStatus, onProgress });
   return { ...r, label: `${r.type === 'audio/wav' ? 'WAV' : 'MP3'} · Suara AI` };
 }
 
@@ -526,6 +526,10 @@ function renderSuara() {
   const rateOut = h('b', { class: 'big-num' }, `${(+cfg.rate || 0) > 0 ? '+' : ''}${+cfg.rate || 0}%`);
   const rateIn = h('input', { type: 'range', min: -30, max: 30, step: 5, value: cfg.rate || 0, 'aria-label': 'Kecepatan bicara', oninput: (e) => { setTtsCfg({ rate: +e.target.value }); rateOut.textContent = `${+e.target.value > 0 ? '+' : ''}${e.target.value}%`; } });
 
+  const pitchTxt = (n) => (n === 0 ? 'normal' : n > 0 ? `lebih tinggi (+${n})` : `lebih rendah (${n})`);
+  const pitchOut = h('b', { class: 'big-num' }, pitchTxt(+cfg.pitch || 0));
+  const pitchIn = h('input', { type: 'range', min: -10, max: 10, step: 1, value: +cfg.pitch || 0, 'aria-label': 'Nada suara', oninput: (e) => { setTtsCfg({ pitch: +e.target.value }); pitchOut.textContent = pitchTxt(+e.target.value); } });
+
   const sample = h('audio', { controls: true, hidden: true });
   const tryBtn = h('button', { class: 'btn', type: 'button' }, icon('play'), 'Coba suara ini');
   tryBtn.onclick = async () => {
@@ -613,6 +617,7 @@ function renderSuara() {
     engineCards,
     engine !== 'piper' ? field('Suara', voiceSel) : h('p', { class: 'hint' }, 'Satu suara Bahasa Indonesia (model Piper, lisensi MIT). Suara dibuat di perangkat Anda — teks tidak dikirim ke server mana pun.'),
     h('div', { class: 'field' }, h('label', {}, 'Kecepatan bicara'), h('div', { class: 'row' }, rateIn, rateOut)),
+    h('div', { class: 'field' }, h('label', {}, 'Nada suara (turun ↔ naik)'), h('div', { class: 'row' }, pitchIn, pitchOut)),
     h('div', { class: 'row wrap' }, tryBtn), sample,
     serverBox,
     h('div', { class: 'callout' }, icon('info'), h('div', {}, h('b', {}, missing ? `${missing} slide belum punya MP3` : 'Semua slide sudah punya audio'),

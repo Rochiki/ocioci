@@ -350,7 +350,7 @@ export class PiperTTS {
    * Teks → {blob, name, type} MP3.
    * @param {number} speed 0.7..1.4 (1 = normal)
    */
-  static async synthesize(text, { voiceId = 'id_ID-news_tts-medium', speed = 1, onProgress = () => {}, onStatus = () => {} } = {}) {
+  static async synthesize(text, { voiceId = 'id_ID-news_tts-medium', speed = 1, pitch = 0, onProgress = () => {}, onStatus = () => {} } = {}) {
     const clean = cleanForSpeech(text);
     if (!clean) throw new Error('Belum ada teks untuk dibacakan.');
     const cached = await PiperTTS.isCached(voiceId);
@@ -360,13 +360,15 @@ export class PiperTTS {
     const inf = config.inference || {};
     const sentences = splitSentences(clean, 260);
     const pcm = [];
+    // Nada: -10..+10 → faktor 2^(n/36). Dibuat dengan resampling; kecepatan dikompensasi di length_scale.
+    const pf = Math.pow(2, (+pitch || 0) / 36);
     for (const [i, sent] of sentences.entries()) {
       onStatus(`Membuat suara ${i + 1}/${sentences.length}…`);
       const ids = await PiperTTS.#phonemeIds(eng, sent);
       const feeds = {
         input: new ort.Tensor('int64', BigInt64Array.from(ids.map(BigInt)), [1, ids.length]),
         input_lengths: new ort.Tensor('int64', BigInt64Array.from([BigInt(ids.length)]), [1]),
-        scales: new ort.Tensor('float32', Float32Array.from([inf.noise_scale ?? 0.667, (inf.length_scale ?? 1) / Math.max(0.5, speed), inf.noise_w ?? 0.8]), [3]),
+        scales: new ort.Tensor('float32', Float32Array.from([inf.noise_scale ?? 0.667, (inf.length_scale ?? 1) / Math.max(0.5, speed / pf), inf.noise_w ?? 0.8]), [3]),
       };
       if ((config.num_speakers || 1) > 1) feeds.sid = new ort.Tensor('int64', BigInt64Array.from([0n]), [1]);
       const out = await session.run(feeds);
@@ -374,7 +376,13 @@ export class PiperTTS {
     }
     const rate = config.audio?.sample_rate || 22050;
     onStatus('Mengubah ke MP3…');
-    return pcmToMp3(joinPcm(pcm, rate), rate, 64);
+    let joined = joinPcm(pcm, rate);
+    if (Math.abs(pf - 1) > 0.001) {
+      const n = Math.floor(joined.length / pf), o = new Float32Array(n);
+      for (let i = 0; i < n; i++) { const p = i * pf, a = Math.floor(p), f = p - a; o[i] = joined[a] * (1 - f) + (joined[Math.min(a + 1, joined.length - 1)] * f); }
+      joined = o;
+    }
+    return pcmToMp3(joined, rate, 64);
   }
 }
 
