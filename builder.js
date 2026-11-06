@@ -297,19 +297,33 @@ async function confirmPiperDownload() {
  * Teks → {blob,name,type,label}. Mesin dipilih di tab Suara.
  * Microsoft langsung ditolak? Otomatis pindah ke Suara AI di browser.
  */
+// Ekspresi: suara Indonesia Microsoft tidak punya gaya emosi bawaan, jadi ditiru lewat kecepatan, nada, dan variasi intonasi.
+const STYLES = {
+  normal: { label: 'Normal', rate: 0, pitch: 0, noise: null },
+  ceria: { label: 'Ceria / ramah', rate: 8, pitch: 3, noise: 0.8 },
+  antusias: { label: 'Antusias / semangat', rate: 14, pitch: 5, noise: 0.95 },
+  hangat: { label: 'Hangat / empati', rate: -8, pitch: 1, noise: 0.7 },
+  tenang: { label: 'Tenang / menenangkan', rate: -12, pitch: -2, noise: 0.5 },
+  tegas: { label: 'Tegas / serius (peringatan)', rate: -4, pitch: -3, noise: 0.45 },
+};
+const styleOf = (cfg) => STYLES[cfg.style] || STYLES.normal;
+const clampN = (v, a, c) => Math.max(a, Math.min(c, v));
+
 async function synthesize(text, { onStatus = () => {}, onProgress = () => {} } = {}) {
   const cfg = ttsCfg();
   const engine = engineOf(cfg);
-  const rate = +cfg.rate || 0;
+  const st = styleOf(cfg);
+  const rate = clampN((+cfg.rate || 0) + st.rate, -50, 50);
+  const pitchN = clampN((+cfg.pitch || 0) + st.pitch, -10, 10);
   if (engine === 'server') {
     if (!cfg.url) throw new Error('Alamat server suara belum diisi. Buka tab Suara, atau pilih "Suara AI di browser".');
     onStatus('Menghubungi server…');
-    const blob = await new EdgeTTS(cfg.url).synthesize(text, { voice: cfg.voice || 'id-ID-GadisNeural', rate, pitch: (+cfg.pitch || 0) * 5 });
+    const blob = await new EdgeTTS(cfg.url).synthesize(text, { voice: cfg.voice || 'id-ID-GadisNeural', rate, pitch: pitchN * 5 });
     return { blob, name: 'narasi.mp3', type: 'audio/mpeg', label: `MP3 · ${voiceLabel(cfg.voice)}` };
   }
   if (engine === 'edge') {
     try {
-      const r = await EdgeDirectTTS.synthesize(text, { voice: cfg.voice || 'id-ID-GadisNeural', rate, pitch: (+cfg.pitch || 0) * 5, onStatus });
+      const r = await EdgeDirectTTS.synthesize(text, { voice: cfg.voice || 'id-ID-GadisNeural', rate, pitch: pitchN * 5, onStatus });
       return { ...r, label: `MP3 · ${voiceLabel(cfg.voice)} (Microsoft)` };
     } catch (e) {
       console.warn(e);
@@ -318,7 +332,7 @@ async function synthesize(text, { onStatus = () => {}, onProgress = () => {} } =
       if (!(await confirmPiperDownload())) throw new Error('Dibatalkan.');
     }
   }
-  const r = await PiperTTS.synthesize(text, { speed: 1 + rate / 100, pitch: +cfg.pitch || 0, onStatus, onProgress });
+  const r = await PiperTTS.synthesize(text, { speed: 1 + rate / 100, pitch: pitchN, noise: st.noise, onStatus, onProgress });
   return { ...r, label: `${r.type === 'audio/wav' ? 'WAV' : 'MP3'} · Suara AI` };
 }
 
@@ -526,6 +540,8 @@ function renderSuara() {
   const rateOut = h('b', { class: 'big-num' }, `${(+cfg.rate || 0) > 0 ? '+' : ''}${+cfg.rate || 0}%`);
   const rateIn = h('input', { type: 'range', min: -30, max: 30, step: 5, value: cfg.rate || 0, 'aria-label': 'Kecepatan bicara', oninput: (e) => { setTtsCfg({ rate: +e.target.value }); rateOut.textContent = `${+e.target.value > 0 ? '+' : ''}${e.target.value}%`; } });
 
+  const styleSel = h('select', { 'aria-label': 'Ekspresi suara' }, Object.entries(STYLES).map(([k, v]) => h('option', { value: k, selected: (cfg.style || 'normal') === k }, v.label)));
+  styleSel.onchange = () => setTtsCfg({ style: styleSel.value });
   const pitchTxt = (n) => (n === 0 ? 'normal' : n > 0 ? `lebih tinggi (+${n})` : `lebih rendah (${n})`);
   const pitchOut = h('b', { class: 'big-num' }, pitchTxt(+cfg.pitch || 0));
   const pitchIn = h('input', { type: 'range', min: -10, max: 10, step: 1, value: +cfg.pitch || 0, 'aria-label': 'Nada suara', oninput: (e) => { setTtsCfg({ pitch: +e.target.value }); pitchOut.textContent = pitchTxt(+e.target.value); } });
@@ -616,6 +632,7 @@ function renderSuara() {
     h('h3', {}, 'Mesin suara MP3'),
     engineCards,
     engine !== 'piper' ? field('Suara', voiceSel) : h('p', { class: 'hint' }, 'Satu suara Bahasa Indonesia (model Piper, lisensi MIT). Suara dibuat di perangkat Anda — teks tidak dikirim ke server mana pun.'),
+    field('Ekspresi', styleSel),
     h('div', { class: 'field' }, h('label', {}, 'Kecepatan bicara'), h('div', { class: 'row' }, rateIn, rateOut)),
     h('div', { class: 'field' }, h('label', {}, 'Nada suara (turun ↔ naik)'), h('div', { class: 'row' }, pitchIn, pitchOut)),
     h('div', { class: 'row wrap' }, tryBtn), sample,
