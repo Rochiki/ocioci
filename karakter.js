@@ -16,13 +16,19 @@
     dewi: { name: 'dr. Dewi', desc: 'Petugas kesehatan — jas putih', skin: '#f0c7a2', skinDark: '#d1a07a', hair: '#1f1611', style: 'sanggul', helmet: null, shirt: '#58b7b0', coat: '#ffffff', lashes: true, stetoskop: true },
   };
 
-  // Karakter ilustrasi (gambar, bukan vektor): 6 pose x 3 bentuk mulut = 18 bingkai, mis. laras-diam-0.webp
+  // Karakter ilustrasi (gambar, bukan vektor): 6 pose x 3 bentuk mulut = 18 bingkai, mis. shendi-diam-0.webp
   var BASE = (document.currentScript && document.currentScript.src || '').replace(/[^\/]*$/, '');
   var FOTO_POSES = ['diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'serius'];
-  LIST.laras = { name: 'Laras', desc: 'Ilustrasi — rambut cokelat, kemeja batik, 6 ekspresi', foto: true };
-  function fotoSvg(id) {
+  // Nama disusun dari Safety · Health · Environment.
+  LIST.safee = { name: 'Safee', desc: 'Safety officer — blazer & dasi hitam', foto: true };
+  LIST.safri = { name: 'Safri', desc: 'Pekerja lapangan — helm putih, rompi oranye', foto: true };
+  LIST.helen = { name: 'Helen', desc: 'Health — kemeja putih, rambut pirang', foto: true };
+  LIST.vira = { name: 'Vira', desc: 'Environment — berhijab krem', foto: true };
+  LIST.shendi = { name: 'Shendi', desc: 'Trainer — kemeja batik', foto: true };
+  LIST.romi = { name: 'Romi', desc: 'Manajer — jas hitam, dasi biru', foto: true };
+  function fotoSvg(id, thumbOnly) {
     var o = ['<div class="kr kr-foto" data-who="' + id + '" aria-hidden="true">'];
-    FOTO_POSES.forEach(function (p) { for (var m = 0; m < 3; m++) o.push('<img src="' + BASE + id + '-' + p + '-' + m + '.webp" alt="" draggable="false" data-p="' + p + '" data-m="' + m + '">'); });
+    FOTO_POSES.forEach(function (p) { for (var m = 0; m < 3; m++) if (!thumbOnly || (p === 'diam' && m === 0)) o.push('<img src="' + BASE + id + '-' + p + '-' + m + '.webp" alt="" draggable="false" data-p="' + p + '" data-m="' + m + '">'); });
     o.push('</div>');
     return o.join('');
   }
@@ -34,8 +40,8 @@
   }
 
   /** SVG lengkap satu karakter. */
-  function svg(id) {
-    if (LIST[id] && LIST[id].foto) return fotoSvg(id);
+  function svg(id, thumbOnly) {
+    if (LIST[id] && LIST[id].foto) return fotoSvg(id, thumbOnly);
     var c = LIST[id] || LIST.raka;
     var line = 'rgba(40,25,15,.28)';
     var top = c.coat || c.shirt;

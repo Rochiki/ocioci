@@ -212,7 +212,13 @@
     (function next() {
       if (!speaking) return;
       if (!parts.length) { speaking = false; narrationOn = false; syncVoiceBtn(); talk(false); return; }
-      var u = new SpeechSynthesisUtterance(parts.shift());
+      var txt = parts.shift();
+      var u = new SpeechSynthesisUtterance(txt);
+      u.onboundary = function (e) {
+        if (!window.StudioLip || (e.name && e.name !== 'word')) return;
+        var w = txt.slice(e.charIndex).split(/[\s,.;:!?]+/)[0];
+        P.seq = StudioLip.wordFrames(w, Math.max(130, w.length * 70 / (rate || 1))); P.seqT = performance.now(); P.gotB = true;
+      };
       u.lang = voice ? voice.lang : 'id-ID'; if (voice) u.voice = voice; u.rate = rate;
       u.onend = next; u.onerror = function () { speaking = false; narrationOn = false; syncVoiceBtn(); talk(false); };
       speechSynthesis.speak(u);
@@ -345,22 +351,37 @@
     if (!mode) { P.el.setAttribute('data-m', '0'); return; }
     if (P.ctx && P.ctx.state === 'suspended') P.ctx.resume();
     P.t0 = performance.now();
+    P.gotB = false; P.seq = ''; P.track = '';
+    if (mode === 'audio' && window.StudioLip) {
+      // Jalur mulut: dari irama suara asli (dibuat di Builder) atau, bila tidak ada, dari teks narasi + durasi audio.
+      var cur = slides[state && state.i];
+      P.track = (cur && cur.lip) || (cur && isFinite(audio.duration) && audio.duration > 0 ? StudioLip.fromText(narrationText(cur), audio.duration) : '');
+    }
     var last = -1, hold = 0;
     (function loop(t) {
       if (!P.mode || !P.el) return;
-      var lv;
-      if (P.mode === 'audio' && P.an && P.ctx && P.ctx.state === 'running') {
-        P.an.getByteTimeDomainData(P.buf);
-        var sum = 0; for (var i = 0; i < P.buf.length; i++) { var v = (P.buf[i] - 128) / 128; sum += v * v; }
-        lv = Math.sqrt(sum / P.buf.length) * 4.2;
-      } else {
-        // Tanpa akses audio (suara perangkat): gerak bibir ritmis yang meyakinkan.
-        var x = (t - P.t0) / 1000;
-        lv = Math.max(0, Math.sin(x * 11.5) * 0.55 + Math.sin(x * 4.3 + 1) * 0.35 + 0.18);
+      var m = -1, minHold = 55;
+      if (P.mode === 'audio' && P.track) {
+        // Selaras dengan posisi putar audio — tidak bergantung izin analisis suara.
+        m = +(P.track.charAt(Math.floor(audio.currentTime * 25)) || 0); minHold = 36;
+      } else if (P.mode === 'tts' && window.StudioLip && P.gotB) {
+        m = +(P.seq.charAt(Math.floor((t - P.seqT) / 40)) || 0); minHold = 36;
       }
-      P.level = P.level * 0.45 + lv * 0.55;
-      var m = P.level > 0.42 ? 2 : P.level > 0.14 ? 1 : 0;
-      if (m !== last && t - hold > 55) { P.el.setAttribute('data-m', String(m)); last = m; hold = t; }
+      if (m < 0) {
+        var lv;
+        if (P.mode === 'audio' && P.an && P.ctx && P.ctx.state === 'running') {
+          P.an.getByteTimeDomainData(P.buf);
+          var sum = 0; for (var i = 0; i < P.buf.length; i++) { var v = (P.buf[i] - 128) / 128; sum += v * v; }
+          lv = Math.sqrt(sum / P.buf.length) * 4.2;
+        } else {
+          // Cadangan terakhir: gerak bibir ritmis.
+          var x = (t - P.t0) / 1000;
+          lv = Math.max(0, Math.sin(x * 11.5) * 0.55 + Math.sin(x * 4.3 + 1) * 0.35 + 0.18);
+        }
+        P.level = P.level * 0.45 + lv * 0.55;
+        m = P.level > 0.42 ? 2 : P.level > 0.14 ? 1 : 0;
+      }
+      if (m !== last && t - hold > minHold) { P.el.setAttribute('data-m', String(m)); last = m; hold = t; }
       P.raf = requestAnimationFrame(loop);
     })(performance.now());
   }

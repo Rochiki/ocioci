@@ -74,7 +74,7 @@ Pilihan lain: **Rekam suara** sendiri di setiap slide, atau **Unggah audio**. Sl
 
 ## 4b. Karakter presenter animasi
 
-Tab **Gaya → Karakter presenter**: nyalakan, lalu pilih karakter bawaan (Raka, Sari, Nisa, Pak Budi, dr. Dewi — gambar vektor buatan sendiri, bebas dipakai; dan **Laras** — karakter ilustrasi dengan 6 ekspresi: diam, menunjuk, melambai, jempol, berpikir, serius/tegas) atau **Karakter sendiri** (unggah PNG transparan/GIF; opsional gambar kedua dengan mulut terbuka untuk gerak bibir).
+Tab **Gaya → Karakter presenter**: nyalakan, lalu pilih karakter bawaan (Raka, Sari, Nisa, Pak Budi, dr. Dewi — gambar vektor buatan sendiri, bebas dipakai; dan enam karakter ilustrasi dengan 6 ekspresi — diam, menunjuk, melambai, jempol, berpikir, serius/tegas: **Safee, Safri, Helen, Vira, Shendi, Romi**; nama disusun dari Safety · Health · Environment) atau **Karakter sendiri** (unggah PNG transparan/GIF; opsional gambar kedua dengan mulut terbuka untuk gerak bibir).
 
 - Karakter berkedip, bernapas, dan **bibirnya bergerak mengikuti narasi** (paling pas dengan MP3).
 - Pose per slide (bagian **Tampilan** di tiap slide): Otomatis, Menunjuk, Melambai, Jempol, Berpikir, Diam, Sembunyikan. Mode Otomatis: melambai di awal, menunjuk materi, berpikir saat kuis, jempol bila jawaban benar.
@@ -98,8 +98,9 @@ Kamus pelafalan (K3 → "K tiga", APD → "A P D", dll.) ada di `tts.js` → `PR
 | `player.html`, `player.js`, `sw.js` | SCORM Player (`sw.js` wajib sejajar `player.html`) |
 | `package-store.js`, `scorm-runtime.js` | Ekstrak `.zip` & API LMS (SCORM 1.2 dan 2004) |
 | `packager.js`, `manifest.js` | Merakit paket `.zip` + `imsmanifest.xml` |
-| `laras-*.webp` (18 gambar) | Bingkai karakter ilustrasi Laras (6 pose × 3 bentuk mulut). Ikut ke paket SCORM hanya bila Laras dipilih. Pose "Serius / tegas" otomatis dipakai pada slide yang memuat kata bahaya/peringatan/dilarang |
-| `paket-index.html`, `course.js`, `course.css`, `scorm-api.js`, `karakter.js` | **Template** yang disalin ke setiap paket SCORM (`paket-index.html` menjadi `index.html` di dalam zip) |
+| `safee-*.webp`, `safri-*.webp`, `helen-*.webp`, `vira-*.webp`, `shendi-*.webp`, `romi-*.webp` (18 gambar per karakter) | Bingkai karakter ilustrasi (6 pose × 3 bentuk mulut). Ikut ke paket SCORM hanya bila karakternya dipilih. Pose "Serius / tegas" otomatis dipakai pada slide yang memuat kata bahaya/peringatan/dilarang |
+| `lipsync.js` | Gerak bibir: membaca irama suara MP3 + vokal dari teks narasi (a/o = mulut lebar, i/u/e = setengah, m/b/p dan jeda = tertutup). Jalur mulut dihitung di Builder saat pratinjau/ekspor dan disimpan di paket; tanpa jalur, dihitung dari teks + durasi audio. Suara perangkat peserta: mulut mengikuti batas kata |
+| `paket-index.html`, `course.js`, `course.css`, `scorm-api.js`, `karakter.js`, `lipsync.js` | **Template** yang disalin ke setiap paket SCORM (`paket-index.html` menjadi `index.html` di dalam zip) |
 | `store.js`, `util.js` | Penyimpanan IndexedDB & fungsi bantu |
 | `jszip.min.js` | JSZip 3.10 (MIT/GPLv3) |
 | `pdf.min.mjs`, `pdf.worker.min.mjs` | PDF.js 5 (Apache-2.0) untuk impor PDF |

@@ -52,6 +52,7 @@ function migrate(p) {
   p.certificate ??= true;
   p.textSize ||= 'auto';
   p.presenter = { ...defaultPresenter(), ...(p.presenter || {}) };
+  if (p.presenter.who === 'laras') p.presenter.who = 'shendi'; // nama lama
   p.narration ||= { browser: p.settings?.browserNarration !== false, autoplay: !!p.settings?.autoplay, voiceName: '', rate: 1 };
   for (const s of p.slides || []) {
     s.id ||= uid('s');
@@ -394,10 +395,22 @@ function schedulePreview(immediate = false) {
   clearTimeout(pvTimer);
   pvTimer = setTimeout(sendPreview, immediate ? 0 : 350);
 }
+/** Gerak bibir: baca irama suara MP3 tiap slide (+ vokal dari teks). Disimpan di slide.lip, dihitung ulang bila audio/teks berubah. */
+async function ensureLip(p) {
+  if (!window.StudioLip || !p?.presenter?.on) return;
+  for (const s of p.slides) {
+    if (!s.audio?.data) { delete s.lip; delete s.lipSig; continue; }
+    const text = narrationFor(s);
+    const sig = `${s.audio.data.size}|${text.length}|${text.slice(0, 60)}`;
+    if (s.lipSig === sig && typeof s.lip === 'string') continue;
+    try { s.lip = await StudioLip.fromAudio(s.audio.data, text); s.lipSig = sig; } catch { s.lip = ''; s.lipSig = sig; }
+  }
+}
 async function sendPreview(keepState = false) {
   if (!pvReady || !project) return;
   const frame = $('pvFrame');
   try {
+    await ensureLip(project);
     const data = await toCourseData(project, (a) => urlOf(a.data), async (s) => {
       if (s.source === 'zip') return { placeholder: `Mini-website "${s.zip?.name || '.zip'}" — tampil penuh di "Coba di Player" atau di LMS.` };
       return s.html?.trim() ? { srcdoc: wrapHtml(s.html, s.title) } : { placeholder: 'Konten HTML belum diisi' };
@@ -471,7 +484,7 @@ function presenterSettings() {
     const pick = (who) => { pr.who = who; pr.on = true; ctx.changed(); draw(); renderEditor(); };
     const cards = h('div', { class: 'char-grid', role: 'radiogroup', 'aria-label': 'Pilih karakter' },
       Object.entries(chars).map(([k, c]) => h('button', { class: 'char-card', type: 'button', role: 'radio', 'aria-checked': String(pr.on && pr.who === k), onclick: () => pick(k) },
-        h('span', { class: 'char-pic presenter-thumb', html: window.StudioKarakter.svg(k) }), h('b', {}, c.name), h('small', {}, c.desc))),
+        h('span', { class: 'char-pic presenter-thumb', html: window.StudioKarakter.svg(k, true) }), h('b', {}, c.name), h('small', {}, c.desc))),
       h('button', { class: 'char-card', type: 'button', role: 'radio', 'aria-checked': String(pr.on && pr.who === 'sendiri'), onclick: () => pick('sendiri') },
         h('span', { class: 'char-pic own-pic' }, pr.img?.data ? h('img', { src: urlOf(pr.img.data), alt: '' }) : icon('upload')), h('b', {}, 'Karakter sendiri'), h('small', {}, 'Unggah PNG/GIF Anda')));
     const own = pr.on && pr.who === 'sendiri' ? h('div', { class: 'stack' },
@@ -768,6 +781,8 @@ async function makeZip() {
   const b = busy('Menyiapkan paket SCORM…');
   try {
     const template = await loadTemplate();
+    b.set('Membaca irama suara untuk gerak bibir…');
+    await ensureLip(project);
     return await buildPackage(project, { template, onProgress: (t) => b.set(t) });
   } finally { b.done(); }
 }

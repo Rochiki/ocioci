@@ -4,7 +4,7 @@
 // Isi paket yang dihasilkan (folder di DALAM zip dibuat otomatis):
 //   imsmanifest.xml        daftar isi untuk LMS
 //   index.html             halaman yang dibuka LMS (dari paket-index.html)
-//   assets/course.js       mesin kursus · assets/course.css · assets/scorm-api.js · assets/karakter.js
+//   assets/course.js       mesin kursus · assets/course.css · assets/scorm-api.js · assets/karakter.js · assets/lipsync.js
 //   assets/course-data.js  isi kursus Anda
 //   media/...              gambar, GIF, video, audio narasi
 //   html-01/...            slide HTML (file, kode, atau mini-website .zip)
@@ -12,10 +12,10 @@
 import { buildManifest } from './manifest.js';
 import { escapeXml, slugify, normalizeZipPath } from './util.js';
 
-export const TEMPLATE_FILES = ['paket-index.html', 'course.css', 'scorm-api.js', 'course.js', 'karakter.js'];
+export const TEMPLATE_FILES = ['paket-index.html', 'course.css', 'scorm-api.js', 'course.js', 'karakter.js', 'lipsync.js'];
 export const POSES = ['auto', 'diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'serius', 'sembunyi'];
 /** Karakter ilustrasi (gambar): nama berkas yang ikut masuk paket bila dipilih. */
-export const FOTO_CHARS = ['laras'];
+export const FOTO_CHARS = ['safee', 'safri', 'helen', 'vira', 'shendi', 'romi'];
 export const fotoFiles = (id) => ['diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'serius'].flatMap((p) => [0, 1, 2].map((m) => `${id}-${p}-${m}.webp`));
 export const TEXT_SIZES = ['auto', 'normal', 'besar', 'sangat'];
 export const SLIDE_TYPES = ['content', 'image', 'video', 'html', 'flip', 'hotspot', 'quiz', 'sort'];
@@ -31,7 +31,7 @@ export async function loadTemplate(base = './') {
   // Berkas biner karakter ilustrasi diambil hanya bila dipakai.
   Object.defineProperty(out, '__bin', { enumerable: false, value: async (name) => {
     const res = await fetch(base + name, { cache: 'no-cache' });
-    if (!res.ok) throw new Error(`File karakter ${name} tidak ditemukan di repo (${res.status}). Unggah semua file laras-*.webp.`);
+    if (!res.ok) throw new Error(`File karakter ${name} tidak ditemukan di repo (${res.status}). Unggah semua file karakter (*.webp).`);
     return new Uint8Array(await res.arrayBuffer());
   } });
   return out;
@@ -122,6 +122,7 @@ export async function toCourseData(project, putAsset, putHtml) {
     if (+s.textMin > 1) base.textMin = Math.min(1.8, +s.textMin);
     if (POSES.includes(s.pose) && s.pose !== 'auto') base.pose = s.pose;
     base.audio = await a(s.audio, `narasi-${n}`);
+    if (base.audio && typeof s.lip === 'string' && /^[012]+$/.test(s.lip) && s.lip.length < 20000) base.lip = s.lip;
     let o;
     switch (s.type) {
       case 'image': o = { image: await a(s.image, `gambar-${n}`), imageAlt: s.imageAlt || '', caption: s.caption || '', fit: s.fit || 'contain' }; break;
@@ -250,6 +251,7 @@ export async function buildPackage(project, { template, JSZip = globalThis.JSZip
   zip.file('assets/scorm-api.js', template['scorm-api.js']);
   zip.file('assets/course.js', template['course.js']);
   zip.file('assets/karakter.js', template['karakter.js']);
+  zip.file('assets/lipsync.js', template['lipsync.js']);
   if (data.presenter?.on && FOTO_CHARS.includes(data.presenter.who)) {
     if (typeof template.__bin !== 'function') throw new Error('Gambar karakter tidak tersedia untuk paket ini.');
     onProgress('Menyalin gambar karakter…');

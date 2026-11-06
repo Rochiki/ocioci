@@ -112,20 +112,36 @@ test('karakter sendiri: gambar dikemas; tanpa gambar karakter dimatikan', async 
   assert.equal(d.presenter.on, false);
 });
 
-test('karakter ilustrasi (Laras): 18 gambar ikut ke paket & terdaftar di manifest', async () => {
+test('karakter ilustrasi (Shendi): 18 gambar ikut ke paket & terdaftar di manifest', async () => {
   const p = sample();
-  p.presenter = { on: true, who: 'laras', pos: 'kanan', size: 'sedang' };
+  p.presenter = { on: true, who: 'shendi', pos: 'kanan', size: 'sedang' };
   p.slides[0].pose = 'serius';
   const out = await buildPackage(p, { template, JSZip, type: 'nodebuffer' });
   const zip = await JSZip.loadAsync(out.data);
   for (const pose of ['diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'serius']) for (const m of [0, 1, 2]) {
-    assert.ok(zip.file(`assets/laras-${pose}-${m}.webp`), `laras-${pose}-${m}.webp`);
+    assert.ok(zip.file(`assets/shendi-${pose}-${m}.webp`), `shendi-${pose}-${m}.webp`);
   }
-  assert.match(await zip.file('imsmanifest.xml').async('string'), /assets\/laras-serius-2\.webp/);
+  assert.match(await zip.file('imsmanifest.xml').async('string'), /assets\/shendi-serius-2\.webp/);
   const d = await readData(zip);
-  assert.equal(d.presenter.who, 'laras'); assert.equal(d.slides[0].pose, 'serius');
+  assert.equal(d.presenter.who, 'shendi'); assert.equal(d.slides[0].pose, 'serius');
   // karakter vektor tidak membawa gambar
   p.presenter = { on: true, who: 'raka', pos: 'kanan', size: 'sedang' };
   const z2 = await JSZip.loadAsync((await buildPackage(p, { template, JSZip, type: 'nodebuffer' })).data);
-  assert.equal(Object.keys(z2.files).filter((f) => f.includes('laras-')).length, 0);
+  assert.equal(Object.keys(z2.files).filter((f) => f.includes('shendi-')).length, 0);
+});
+
+test('jalur gerak bibir (lip) ikut ke data kursus hanya bila slide punya audio; lipsync.js ikut paket', async () => {
+  const p = sample();
+  p.presenter = { on: true, who: 'raka', pos: 'kanan', size: 'sedang' };
+  p.slides[0].audio = { data: new Uint8Array([73, 68, 51]), name: 'n.mp3', type: 'audio/mpeg' };
+  p.slides[0].lip = '0120012';
+  p.slides[1].lip = '0121';          // tanpa audio → diabaikan
+  p.slides[0].audio && (p.slides[2] = { ...p.slides[2], audio: p.slides[0].audio, lip: 'abc' }); // tidak valid → diabaikan
+  const zip = await JSZip.loadAsync((await buildPackage(p, { template, JSZip, type: 'nodebuffer' })).data);
+  assert.ok(zip.file('assets/lipsync.js'));
+  assert.match(await zip.file('index.html').async('string'), /assets\/lipsync\.js/);
+  const d = await readData(zip);
+  assert.equal(d.slides[0].lip, '0120012');
+  assert.equal(d.slides[1].lip, undefined);
+  if (d.slides[2]) assert.equal(d.slides[2].lip, undefined);
 });
