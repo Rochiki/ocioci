@@ -82,3 +82,31 @@ test('findZipEntry & wrapHtml', () => {
   assert.equal(wrapHtml('<!doctype html><p>x'), '<!doctype html><p>x');
   assert.match(wrapHtml('<p>x</p>', 'Judul'), /<title>Judul<\/title>[\s\S]*<p>x<\/p>/);
 });
+
+test('karakter presenter, ukuran teks & pose ikut ke paket', async () => {
+  const p = sample();
+  p.textSize = 'besar';
+  p.presenter = { on: true, who: 'nisa', pos: 'kiri', size: 'besar' };
+  p.slides[0].textSize = 'auto'; p.slides[0].textMin = 1.4; p.slides[0].pose = 'lambai';
+  p.slides[1].textSize = ''; p.slides[1].pose = 'auto';
+  const out = await buildPackage(p, { template, JSZip, type: 'nodebuffer' });
+  const zip = await JSZip.loadAsync(out.data);
+  assert.ok(zip.file('assets/karakter.js'), 'karakter.js ikut');
+  assert.match(await zip.file('index.html').async('string'), /assets\/karakter\.js/);
+  const d = await readData(zip);
+  assert.equal(d.textSize, 'besar');
+  assert.deepEqual(d.presenter, { on: true, who: 'nisa', name: '', pos: 'kiri', size: 'besar', img: null, imgOpen: null });
+  assert.equal(d.slides[0].textSize, 'auto'); assert.equal(d.slides[0].textMin, 1.4); assert.equal(d.slides[0].pose, 'lambai');
+  assert.equal(d.slides[1].textSize, undefined); assert.equal(d.slides[1].pose, undefined);
+});
+
+test('karakter sendiri: gambar dikemas; tanpa gambar karakter dimatikan', async () => {
+  const p = sample();
+  p.presenter = { on: true, who: 'sendiri', name: 'Bu Ani', pos: 'kanan', size: 'sedang', img: { data: new Uint8Array([137, 80, 78, 71]), name: 'ani.png', type: 'image/png' }, imgOpen: null };
+  let d = await readData(await JSZip.loadAsync((await buildPackage(p, { template, JSZip, type: 'nodebuffer' })).data));
+  assert.equal(d.presenter.img, 'media/karakter.png');
+  assert.equal(d.presenter.name, 'Bu Ani');
+  p.presenter.img = null;
+  d = await readData(await JSZip.loadAsync((await buildPackage(p, { template, JSZip, type: 'nodebuffer' })).data));
+  assert.equal(d.presenter.on, false);
+});

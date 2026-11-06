@@ -3,6 +3,7 @@
 // ============================================================
 import { h, icon, toast, formatBytes } from './ui.js';
 import { uid } from './util.js';
+import { openCropper } from './crop.js';
 
 // ------------------------------------------------------------ katalog jenis slide
 export const TYPES = {
@@ -96,6 +97,11 @@ export function assetPicker(obj, key, ctx, { kind = 'image', label = 'Pilih file
       box.append(prev, h('div', { class: 'asset-meta' },
         h('span', { class: 'asset-name' }, a.name || 'file', h('small', {}, ` · ${formatBytes(a.data.size || 0)}`)),
         h('span', { class: 'row' },
+          kind === 'image' && !/svg/.test(a.type || a.data.type || '') ? h('button', { class: 'btn btn-sm', type: 'button', onclick: async () => {
+            const next = await openCropper(a);
+            if (!next) return;
+            obj[key] = next; onSet?.(obj[key]); ctx.changed({ list: true }); render();
+          } }, icon('crop'), a.original ? 'Potong lagi' : 'Potong') : null,
           h('button', { class: 'btn btn-sm', type: 'button', onclick: () => input.click() }, icon('upload'), 'Ganti'),
           h('button', { class: 'btn btn-sm btn-danger', type: 'button', onclick: () => { obj[key] = null; onSet?.(null); ctx.changed({ list: true }); render(); } }, icon('trash'), 'Hapus'))));
     } else {

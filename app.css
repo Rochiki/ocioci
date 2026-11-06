@@ -449,3 +449,57 @@ h3.sep { margin: 20px 0 10px; }
   .player-main { height: 82vh; height: 82dvh; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---------- mesin suara (tab Suara) ---------- */
+.engine-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.engine-card { display: flex; gap: 10px; align-items: flex-start; padding: 11px 12px; border: 2px solid var(--line); border-radius: var(--r-m); background: var(--surface); cursor: pointer; }
+.engine-card:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.engine-card input { margin-top: 3px; accent-color: var(--accent); width: 17px; height: 17px; flex: none; }
+.engine-card b { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.engine-card small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+.tag { font-style: normal; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 99px; background: var(--signal); color: var(--signal-ink); }
+.pane-side audio { width: 100%; margin: 8px 0; }
+.narr-head .link.small { font-size: 12.5px; }
+
+/* ---------- tampilan per slide ---------- */
+details.look { border-top: 1px dashed var(--line); margin-top: 14px; padding-top: 10px; }
+details.look summary { display: flex; align-items: center; gap: 6px; }
+.look-body { padding-top: 4px; }
+.look-body select { width: 100%; }
+
+/* ---------- karakter presenter (tab Gaya) ---------- */
+.presenter-set { margin: 18px 0; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.presenter-set h3 { margin-top: 0; }
+.char-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.char-card { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px 9px; border: 2px solid var(--line); border-radius: var(--r-m); background: var(--surface); font: inherit; color: var(--ink); cursor: pointer; text-align: center; }
+.char-card:hover { border-color: var(--muted); }
+.char-card[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.char-card b { font-size: 13px; }
+.char-card small { font-size: 11px; color: var(--muted); line-height: 1.25; }
+.char-pic { width: 100%; height: 92px; display: grid; place-items: center; overflow: hidden; }
+.char-pic .kr { width: 100%; height: 100%; }
+.char-pic img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.own-pic .ic { width: 30px; height: 30px; color: var(--accent); }
+.presenter-thumb .kr .pose { display: none; }
+.presenter-thumb .kr .pose-lambai { display: inline; }
+.presenter-thumb .kr-mouth > * { display: none; }
+.presenter-thumb .kr-mouth .m0 { display: inline; }
+.char-card:hover .kr-wave, .char-card[aria-checked="true"] .kr-wave { transform-box: view-box; transform-origin: 213px 160px; animation: krWave 1.4s ease-in-out infinite; }
+@keyframes krWave { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(14deg); } }
+@media (max-width: 420px) { .char-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---------- potong gambar ---------- */
+.cropper .hint { margin: 0 0 10px; }
+.crop-stage { position: relative; display: block; width: fit-content; max-width: 100%; margin: 0 auto 12px; touch-action: none; user-select: none; -webkit-user-select: none; background: #222; }
+.crop-stage > img { display: block; max-width: 100%; max-height: 58vh; }
+.crop-shade { position: absolute; inset: 0; pointer-events: none; background: rgba(0,0,0,.55);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, var(--x) var(--y), var(--x) calc(var(--y) + var(--h)), calc(var(--x) + var(--w)) calc(var(--y) + var(--h)), calc(var(--x) + var(--w)) var(--y), var(--x) var(--y)); }
+.crop-box { position: absolute; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.5); cursor: move;
+  background-image: linear-gradient(rgba(255,255,255,.35) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.35) 1px, transparent 1px); background-size: 33.33% 33.33%; background-position: -1px -1px; }
+.crop-h { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; background: #fff; border: 2px solid var(--accent); border-radius: 50%; touch-action: none; }
+.crop-h.h-nw { left: 0; top: 0; cursor: nwse-resize; } .crop-h.h-ne { left: 100%; top: 0; cursor: nesw-resize; }
+.crop-h.h-sw { left: 0; top: 100%; cursor: nesw-resize; } .crop-h.h-se { left: 100%; top: 100%; cursor: nwse-resize; }
+.crop-h.h-n { left: 50%; top: 0; cursor: ns-resize; border-radius: 6px; } .crop-h.h-s { left: 50%; top: 100%; cursor: ns-resize; border-radius: 6px; }
+.crop-h.h-w { left: 0; top: 50%; cursor: ew-resize; border-radius: 6px; } .crop-h.h-e { left: 100%; top: 50%; cursor: ew-resize; border-radius: 6px; }
+.crop-tools { margin-bottom: 12px; } .crop-tools .segmented { flex: 1 1 260px; }
+.crop-actions { border-top: 1px solid var(--line); padding-top: 12px; }

@@ -10,6 +10,7 @@
 // ============================================================
 import { uid } from './util.js';
 import { findZipEntry } from './packager.js';
+import { cropBlob } from './crop.js';
 
 const NS_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 const MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', bmp: 'image/bmp', mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav' };
@@ -104,17 +105,47 @@ function resolvePath(baseDir, target) {
   for (const p of parts) { if (p === '..') out.pop(); else if (p && p !== '.') out.push(p); }
   return out.join('/');
 }
-function paragraphsOf(txBody) {
+/** Teks run; run tebal (b="1") dibungkus **…** agar tetap tebal di kursus. */
+function runText(n, keepBold) {
+  const t = all(n, 't').map((x) => x.textContent).join('');
+  if (!keepBold || !t.trim() || first(n, 'rPr')?.getAttribute('b') !== '1') return t;
+  const m = /^(\s*)(.*?)(\s*)$/s.exec(t);
+  return `${m[1]}**${m[2]}**${m[3]}`;
+}
+function paragraphsOf(txBody, { keepBold = false } = {}) {
   return all(txBody, 'p').map((p) => {
     const text = [...p.childNodes].map((n) => {
-      if (n.localName === 'r' || n.localName === 'fld') return all(n, 't').map((t) => t.textContent).join('');
+      if (n.localName === 'r' || n.localName === 'fld') return runText(n, keepBold);
       if (n.localName === 'br') return '\n';
       return '';
-    }).join('').replace(/\s+\n/g, '\n').trim();
+    }).join('').replace(/\*\*\s*\*\*/g, '').replace(/\s+\n/g, '\n').trim();
     const lvl = +(first(p, 'pPr')?.getAttribute('lvl') || 0);
     const bulletOff = !!first(p, 'buNone');
     return { text, lvl, bulletOff };
   }).filter((x) => x.text);
+}
+/**
+ * Ukuran huruf dominan (pt) sebuah kotak teks PowerPoint, sudah dikali skala "AutoFit" bila ada.
+ * fallback dipakai bila ukuran tidak ditulis langsung di slide (ikut master).
+ */
+function fontPtOf(txBody, fallback) {
+  const weight = new Map();
+  const lstDef = +(first(first(txBody, 'lstStyle') || txBody, 'defRPr')?.getAttribute('sz') || 0);
+  for (const p of all(txBody, 'p')) {
+    const pDef = +(first(p, 'pPr') && first(first(p, 'pPr'), 'defRPr')?.getAttribute('sz') || 0);
+    for (const r of all(p, 'r')) {
+      const len = all(r, 't').map((t) => t.textContent).join('').trim().length;
+      if (!len) continue;
+      const sz = +(first(r, 'rPr')?.getAttribute('sz') || 0) || pDef || lstDef;
+      if (sz) weight.set(sz, (weight.get(sz) || 0) + len);
+    }
+  }
+  let best = 0, bestW = 0;
+  for (const [sz, w] of weight) if (w > bestW) { best = sz; bestW = w; }
+  let pt = best ? best / 100 : fallback;
+  const fit = first(first(txBody, 'bodyPr') || txBody, 'normAutofit');
+  if (fit?.getAttribute('fontScale')) pt *= (+fit.getAttribute('fontScale') || 100000) / 100000;
+  return pt;
 }
 function offsetOf(el) {
   const off = first(el, 'off');
@@ -144,6 +175,7 @@ export async function importPptx(file, onProgress = () => {}) {
     // Teks: urutkan bentuk dari atas ke bawah, kiri ke kanan.
     let title = '';
     const blocks = [];
+    const bodyPts = []; // [pt, panjang teks]
     const shapes = all(doc, 'sp').map((sp) => ({ sp, pos: offsetOf(sp) })).sort((a, b) => a.pos.y - b.pos.y || a.pos.x - b.pos.x);
     for (const { sp } of shapes) {
       const ph = first(sp, 'ph');
@@ -151,10 +183,12 @@ export async function importPptx(file, onProgress = () => {}) {
       if (['sldNum', 'dt', 'ftr', 'hdr'].includes(phType)) continue;
       const tx = first(sp, 'txBody');
       if (!tx) continue;
-      const paras = paragraphsOf(tx);
+      const isTitle = !title && (phType === 'title' || phType === 'ctrTitle');
+      const paras = paragraphsOf(tx, { keepBold: !isTitle });
       if (!paras.length) continue;
-      if (!title && (phType === 'title' || phType === 'ctrTitle')) { title = paras.map((p) => p.text).join(' '); continue; }
+      if (isTitle) { title = paras.map((p) => p.text.replace(/\*\*/g, '')).join(' '); continue; }
       const isBody = phType === 'body' || phType === '' || phType === 'obj';
+      bodyPts.push([fontPtOf(tx, ph ? (phType === 'subTitle' ? 24 : 28) : 18), paras.reduce((n, p) => n + p.text.length, 0)]);
       if (paras.length > 1 && isBody && !paras.every((p) => p.bulletOff)) {
         blocks.push(paras.map((p) => `${'  '.repeat(Math.min(p.lvl, 1))}- ${p.text.replace(/\n/g, ' ')}`).join('\n'));
       } else {
@@ -174,17 +208,30 @@ export async function importPptx(file, onProgress = () => {}) {
       const rid = blip?.getAttributeNS(NS_REL, 'embed') || blip?.getAttribute('r:embed');
       const rel = rid && rels.get(rid);
       if (!rel || rel.mode === 'External') continue;
-      const ext2 = first(pic, 'ext');
+      const ext2 = first(first(pic, 'spPr') || pic, 'ext');
       const area = ext2 ? (+ext2.getAttribute('cx') || 0) * (+ext2.getAttribute('cy') || 0) : 0;
-      if (!best || area > best.area) best = { area, path: resolvePath(dir, rel.target) };
+      // Potongan (crop) yang dibuat di PowerPoint disimpan sebagai srcRect — gambar aslinya tetap utuh di file.
+      const sr = first(first(pic, 'blipFill') || pic, 'srcRect');
+      const crop = sr ? { l: sr.getAttribute('l'), t: sr.getAttribute('t'), r: sr.getAttribute('r'), b: sr.getAttribute('b') } : null;
+      if (!best || area > best.area) best = { area, path: resolvePath(dir, rel.target), crop };
     }
     let image = null;
     if (best) {
       const f = zip.file(best.path);
       const e = ext(best.path);
       if (f && MIME[e]?.startsWith('image/') && e !== 'emf' && e !== 'wmf') {
+        const name = best.path.split('/').pop();
         const blob = new Blob([await f.async('uint8array')], { type: MIME[e] });
-        image = asset(blob, best.path.split('/').pop());
+        image = asset(blob, name);
+        const c = best.crop;
+        if (c && ['l', 't', 'r', 'b'].some((k) => +c[k] > 0) && e !== 'gif' && e !== 'svg') {
+          try {
+            const cut = await cropBlob(blob, c);
+            const f = (v) => Math.max(0, Math.min(0.95, (+v || 0) / 100000));
+            const box = { x: f(c.l), y: f(c.t), w: 1 - f(c.l) - f(c.r), h: 1 - f(c.t) - f(c.b) };
+            if (cut !== blob) image = { data: cut, name: name.replace(/\.[^.]+$/, '') + `-potong.${cut.type === 'image/png' ? 'png' : 'jpg'}`, type: cut.type, original: image, crop: box };
+          } catch (err) { console.warn('Crop gagal, pakai gambar asli', err); }
+        }
       }
     }
 
@@ -213,12 +260,16 @@ export async function importPptx(file, onProgress = () => {}) {
     }
 
     const body = blocks.join('\n\n').trim();
-    const finalTitle = (title || body.split('\n')[0].replace(/^- /, '') || `Slide ${n}`).slice(0, 120);
+    // Ukuran huruf isi di PowerPoint → batas bawah ukuran teks di kursus (17px ≈ 16pt layar penuh).
+    const totalLen = bodyPts.reduce((n, [, l]) => n + l, 0);
+    const pt = totalLen ? bodyPts.reduce((n, [p, l]) => n + p * l, 0) / totalLen : 0;
+    const textMin = pt ? Math.round(Math.max(1, Math.min(1.6, (pt * 1.05) / 17)) * 100) / 100 : 1;
+    const finalTitle = (title || body.split('\n')[0].replace(/^- /, '').replace(/\*\*/g, '') || `Slide ${n}`).slice(0, 120);
     const finalBody = title ? body : body.split('\n').slice(1).join('\n').trim();
     if (!finalBody && image) {
       slides.push({ id: uid('s'), type: 'image', title: finalTitle, image, imageAlt: '', caption: '', fit: 'contain', narration, audio: null });
     } else {
-      slides.push({ id: uid('s'), type: 'content', title: finalTitle, body: finalBody, image, imageAlt: '', layout: image ? (finalBody.length > 260 ? 'kanan' : 'atas') : 'atas', narration, audio: null });
+      slides.push({ id: uid('s'), type: 'content', title: finalTitle, body: finalBody, image, imageAlt: '', layout: image ? (finalBody.length > 260 ? 'kanan' : 'atas') : 'atas', narration, audio: null, textSize: 'auto', textMin, fontPt: pt ? Math.round(pt) : null });
     }
     if (video) slides.push({ id: uid('s'), type: 'video', title: `${finalTitle} — video`, source: 'file', video, url: '', caption: '', mustWatch: false, narration: '', audio: null });
   }

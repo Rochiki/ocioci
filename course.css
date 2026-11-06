@@ -79,8 +79,9 @@ img { max-width: 100%; }
 .scrim { position: fixed; inset: 0; z-index: 25; background: rgba(10,15,20,.4); }
 
 /* ---------- slide ---------- */
-.slide { flex: 1; width: 100%; max-width: 900px; margin: 0 auto; padding: 26px 20px 34px; outline: none; }
-.slide h2 { font-size: clamp(1.4rem, 3.6vw, 2rem); margin: 0 0 16px; }
+.slide { flex: 1; width: 100%; max-width: 900px; margin: 0 auto; padding: 26px 20px 34px; outline: none; --fs: 1; --ts: 1; font-size: calc(100% * var(--fs)); }
+.slide h2 { font-size: calc(clamp(1.4rem, 3.6vw, 2rem) * var(--ts)); margin: 0 0 .6em; }
+.slide.wide-text { max-width: 1060px; }
 .slide h3 { font-size: 1.15rem; margin: 1.2em 0 .4em; }
 .body p { margin: 0 0 1em; }
 .body ul, .body ol { padding-left: 1.3em; margin: 0 0 1em; }
@@ -280,3 +281,58 @@ figure.full figcaption { color: var(--muted); margin-top: 10px; font-size: 15px;
   .start-card { padding: 22px 18px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---------- karakter presenter ---------- */
+.presenter {
+  --ph: 230px; position: fixed; z-index: 8; bottom: 66px; right: max(6px, env(safe-area-inset-right)); height: var(--ph); width: calc(var(--ph) * 1.07);
+  pointer-events: none; transition: opacity .3s, transform .4s cubic-bezier(.3,1.4,.5,1); filter: drop-shadow(0 8px 14px rgba(0,0,0,.18));
+}
+.presenter.pos-kiri { right: auto; left: max(6px, env(safe-area-inset-left)); }
+.presenter.size-kecil { --ph: 170px; } .presenter.size-besar { --ph: 300px; }
+.presenter.off { opacity: 0; transform: translateY(40px) scale(.9); }
+.presenter.at-start { bottom: 12px; }
+.presenter-btn { all: unset; display: block; width: 100%; height: 100%; cursor: pointer; pointer-events: auto; border-radius: 30% 30% 12px 12px; }
+.presenter-btn:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
+.presenter .kr { width: 100%; height: 100%; overflow: visible; display: block; }
+.presenter.pos-kiri .kr { transform: scaleX(-1); }
+.kr .pose { display: none; }
+.presenter[data-pose="diam"] .pose-diam, .presenter[data-pose="tunjuk"] .pose-tunjuk, .presenter[data-pose="lambai"] .pose-lambai,
+.presenter[data-pose="jempol"] .pose-jempol, .presenter[data-pose="pikir"] .pose-pikir { display: inline; }
+.kr-mouth > * { display: none; }
+.presenter[data-m="0"] .m0, .presenter[data-m="1"] .m1, .presenter[data-m="2"] .m2 { display: inline; }
+.kr-body { transform-box: view-box; transform-origin: 120px 300px; animation: krBreath 3.6s ease-in-out infinite; }
+.kr-head { transform-box: view-box; transform-origin: 120px 150px; }
+.presenter[data-talk="1"] .kr-head { animation: krNod 1.1s ease-in-out infinite; }
+.kr-eyes { transform-box: fill-box; transform-origin: center; animation: krBlink 4.8s infinite; }
+.kr-wave { transform-box: view-box; transform-origin: 213px 160px; animation: krWave 1.4s ease-in-out infinite; }
+.kr-finger { transform-box: view-box; transform-origin: 6px 176px; animation: krPoint 2.2s ease-in-out infinite; }
+.kr-thumb { transform-box: view-box; transform-origin: 153px 262px; animation: krPop .5s cubic-bezier(.3,1.6,.5,1) both; }
+@keyframes krBreath { 50% { transform: translateY(-2px) scaleY(1.008); } }
+@keyframes krNod { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-2.2deg) translateY(1px); } 70% { transform: rotate(1.6deg); } }
+@keyframes krBlink { 0%, 93%, 100% { transform: scaleY(1); } 95.5% { transform: scaleY(.1); } }
+@keyframes krWave { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(14deg); } }
+@keyframes krPoint { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-5px); } }
+@keyframes krPop { from { transform: scale(.4); } }
+/* karakter unggahan sendiri: 1 gambar (bergoyang saat bicara) atau 2 gambar (mulut tutup/buka) */
+.presenter .own { position: relative; width: 100%; height: 100%; }
+.presenter .own img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: bottom center; }
+.presenter .own img.open { visibility: hidden; }
+.presenter[data-m="1"] .own.two img.open, .presenter[data-m="2"] .own.two img.open { visibility: visible; }
+.presenter[data-m="1"] .own.two img.closed, .presenter[data-m="2"] .own.two img.closed { visibility: hidden; }
+.presenter .own { transform-origin: 50% 100%; animation: krBreath 3.6s ease-in-out infinite; }
+.presenter[data-talk="1"] .own.one { animation: krTalk .36s ease-in-out infinite; }
+@keyframes krTalk { 50% { transform: translateY(-3px) rotate(-1deg) scaleY(1.02); } }
+.presenter.pos-kiri .own img { transform: none; }
+.presenter-tip {
+  position: absolute; bottom: 92%; right: 30%; background: var(--surface); color: var(--ink); font-size: 13px; font-weight: 700; padding: 6px 10px;
+  border-radius: 12px 12px 4px 12px; box-shadow: 0 6px 18px rgba(0,0,0,.18); white-space: nowrap; animation: zoom .3s ease both;
+}
+.presenter.pos-kiri .presenter-tip { right: auto; left: 30%; border-radius: 12px 12px 12px 4px; }
+/* Jangan sampai karakter menutupi teks: layar lebar → kolom materi menyempit; layar sempit → ruang kosong di bawah. */
+@media (min-width: 1181px) { body.with-presenter .slide { max-width: min(1060px, calc(100vw - 2 * var(--pw, 246px) - 16px)); } }
+@media (max-width: 1180px) { body.with-presenter .slide { padding-bottom: calc(var(--ph-h, 150px) + 10px); } }
+@media (max-width: 640px) {
+  .presenter { --ph: 128px; bottom: 62px; }
+  .presenter.size-kecil { --ph: 100px; } .presenter.size-besar { --ph: 160px; }
+}
+@media print { .presenter { display: none !important; } }

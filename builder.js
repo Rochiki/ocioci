@@ -7,7 +7,8 @@ import { h, icon, toast, modal, busy, formatBytes } from './ui.js';
 import { TYPES, newSlide, slideEditor, field, text, toggle, segmented, assetPicker, urlOf } from './editors.js';
 import { loadTemplate, buildPackage, validateProject, toCourseData, wrapHtml, projectSize, isAsset } from './packager.js';
 import { importFiles, ACCEPT_ALL } from './importers.js';
-import { BrowserTTS, Recorder, EdgeTTS, cleanForSpeech, normalizeServerUrl } from './tts.js';
+import { BrowserTTS, Recorder, EdgeTTS, PiperTTS, EdgeDirectTTS, PIPER_VOICES, cleanForSpeech, normalizeServerUrl } from './tts.js';
+import { openCropper } from './crop.js';
 
 const KEY = 'proyek-v2';
 const TTS_KEY = 'studio-scorm:tts-v2';
@@ -36,9 +37,12 @@ function blankProject() {
     navigation: 'bebas', certificate: true, certificateIssuer: '',
     theme: { preset: 'k3', ...THEMES.k3, font: 'modern', transition: 'geser' }, logo: null, cover: null,
     narration: { browser: true, autoplay: false, voiceName: '', rate: 1 },
+    textSize: 'auto',
+    presenter: defaultPresenter(),
     slides: [first],
   };
 }
+function defaultPresenter() { return { on: false, who: 'raka', pos: 'kanan', size: 'sedang', img: null, imgOpen: null, name: '' }; }
 /** Proyek versi lama (format 1) → format 2. */
 function migrate(p) {
   if (!p) return p;
@@ -46,6 +50,8 @@ function migrate(p) {
   p.theme ||= { preset: 'k3', ...THEMES.k3, font: 'modern', transition: 'geser' };
   p.navigation ||= 'bebas';
   p.certificate ??= true;
+  p.textSize ||= 'auto';
+  p.presenter = { ...defaultPresenter(), ...(p.presenter || {}) };
   p.narration ||= { browser: p.settings?.browserNarration !== false, autoplay: !!p.settings?.autoplay, voiceName: '', rate: 1 };
   for (const s of p.slides || []) {
     s.id ||= uid('s');
@@ -169,10 +175,25 @@ function renderEditor() {
     h('button', { class: 'icon-btn', type: 'button', title: 'Turunkan', 'aria-label': 'Turunkan slide', disabled: idx === project.slides.length - 1, onclick: () => move(1) }, icon('down')),
     h('button', { class: 'icon-btn', type: 'button', title: 'Duplikat', 'aria-label': 'Duplikat slide', onclick: duplicate }, icon('copy')),
     h('button', { class: 'icon-btn danger', type: 'button', title: 'Hapus', 'aria-label': 'Hapus slide', onclick: removeSlide }, icon('trash')));
-  ed.replaceChildren(h('div', { class: 'editor-card' }, head, ...slideEditor(s, ctx)), narrationPanel(s),
+  ed.replaceChildren(h('div', { class: 'editor-card' }, head, ...slideEditor(s, ctx), slideLook(s)), narrationPanel(s),
     h('div', { class: 'editor-foot' },
       h('button', { class: 'btn', type: 'button', disabled: idx === 0, onclick: () => select(project.slides[idx - 1].id) }, icon('up'), 'Slide sebelumnya'),
       h('button', { class: 'btn btn-primary', type: 'button', onclick: openAddPicker }, icon('plus'), 'Tambah slide')));
+}
+
+// ================================================================ tampilan per slide: ukuran teks & pose karakter
+const POSE_OPTS = [['auto', 'Otomatis'], ['tunjuk', 'Menunjuk'], ['lambai', 'Melambai'], ['jempol', 'Jempol'], ['pikir', 'Berpikir'], ['diam', 'Diam'], ['sembunyi', 'Sembunyikan']];
+function slideLook(s) {
+  const hasText = !['video', 'html'].includes(s.type);
+  if (!hasText && !project.presenter?.on) return null;
+  if (hasText && s.textSize == null) s.textSize = '';
+  const sizeSeg = hasText ? h('div', { class: 'field' }, h('label', {}, 'Ukuran teks'),
+    segmented(s, 'textSize', ctx, [['', 'Ikut kursus'], ['auto', 'Pas layar'], ['normal', 'Normal'], ['besar', 'Besar'], ['sangat', 'Sangat besar']], { label: 'Ukuran teks' }),
+    h('div', { class: 'hint' }, s.fontPt ? `Di PowerPoint: ±${s.fontPt} pt. "Pas layar" memperbesar teks sampai memenuhi layar peserta (seperti AutoFit PowerPoint).` : '"Pas layar" memperbesar teks sampai memenuhi layar peserta (slide materi). Bawaan kursus diatur di tab Gaya.')) : null;
+  const poseSel = project.presenter?.on ? field('Gaya karakter di slide ini', h('select', { onchange: (e) => { s.pose = e.target.value; ctx.changed(); } },
+    POSE_OPTS.map(([v, l]) => h('option', { value: v, selected: (s.pose || 'auto') === v }, l)))) : null;
+  return h('details', { class: 'mini look', open: !!(s.textSize || (s.pose && s.pose !== 'auto')) },
+    h('summary', {}, icon('text'), 'Tampilan: ukuran teks', project.presenter?.on ? ' & karakter' : ''), h('div', { class: 'look-body' }, sizeSeg, poseSel));
 }
 
 function move(d) {
@@ -246,13 +267,10 @@ function narrationPanel(s) {
     s.audio = { data: f, name: f.name, type: f.type, source: 'unggahan' }; ctx.changed({ list: true }); drawAudio(); e.target.value = '';
   } });
   const mp3Btn = h('button', { class: 'btn btn-magic', type: 'button' }, icon('sparkle'), 'Buat MP3 natural');
-  mp3Btn.onclick = async () => {
-    if (!ttsCfg().url) { setSideTab('suara', true); toast('Pasang server suara dulu (gratis) di tab Suara — atau pakai suara perangkat/rekam sendiri.'); return; }
-    await makeMp3(s, mp3Btn); drawAudio();
-  };
+  mp3Btn.onclick = async () => { if (await makeMp3(s, mp3Btn)) { drawAudio(); toast('MP3 narasi dipasang di slide ini.', 'ok'); } };
   return h('section', { class: 'editor-card narr' },
     h('div', { class: 'narr-head' }, icon('sound'), h('h3', {}, 'Narasi suara'), h('span', { class: 'spacer' }),
-      h('span', { class: 'muted small' }, cfg.url ? 'Server MP3 terpasang' : 'Suara perangkat aktif')),
+      h('button', { class: 'link small', type: 'button', onclick: () => setSideTab('suara', true) }, `Mesin: ${ENGINE_NAMES[engineOf(cfg)]}`)),
     field('Naskah narasi', text(s, 'narration', ctx, { multiline: true, rows: 4, placeholder: 'Kosongkan untuk membacakan judul + isi slide otomatis.' })),
     h('div', { class: 'narr-actions' },
       listenBtn,
@@ -262,18 +280,62 @@ function narrationPanel(s) {
     audioBox);
 }
 
-async function makeMp3(s, btn) {
+const ENGINE_NAMES = { piper: 'Suara AI di browser', edge: 'Microsoft Gadis/Ardi', server: 'Server sendiri' };
+const engineOf = (cfg = ttsCfg()) => (ENGINE_NAMES[cfg.engine] ? cfg.engine : 'piper');
+const voiceLabel = (v) => String(v || 'id-ID-GadisNeural').replace(/^[a-z]{2}-[A-Z]{2}-/, '').replace(/Neural$/, '');
+
+/** Pastikan pengguna tahu soal unduhan pertama Piper (±90 MB). */
+async function confirmPiperDownload() {
+  if (await PiperTTS.isCached()) return true;
+  if (ttsCfg().piperOk) return true;
+  const ok = confirm(`Suara AI dibuat langsung di browser Anda — gratis, tanpa server.\n\nPertama kali, browser perlu mengunduh model suara ±${PIPER_VOICES['id_ID-news_tts-medium'].size + 28} MB (sekali saja, lalu tersimpan). Sebaiknya pakai Wi-Fi.\n\nLanjutkan?`);
+  if (ok) setTtsCfg({ piperOk: true });
+  return ok;
+}
+
+/**
+ * Teks → {blob,name,type,label}. Mesin dipilih di tab Suara.
+ * Microsoft langsung ditolak? Otomatis pindah ke Suara AI di browser.
+ */
+async function synthesize(text, { onStatus = () => {}, onProgress = () => {} } = {}) {
   const cfg = ttsCfg();
+  const engine = engineOf(cfg);
+  const rate = +cfg.rate || 0;
+  if (engine === 'server') {
+    if (!cfg.url) throw new Error('Alamat server suara belum diisi. Buka tab Suara, atau pilih "Suara AI di browser".');
+    onStatus('Menghubungi server…');
+    const blob = await new EdgeTTS(cfg.url).synthesize(text, { voice: cfg.voice || 'id-ID-GadisNeural', rate, pitch: +cfg.pitch || 0 });
+    return { blob, name: 'narasi.mp3', type: 'audio/mpeg', label: `MP3 · ${voiceLabel(cfg.voice)}` };
+  }
+  if (engine === 'edge') {
+    try {
+      const r = await EdgeDirectTTS.synthesize(text, { voice: cfg.voice || 'id-ID-GadisNeural', rate, pitch: +cfg.pitch || 0, onStatus });
+      return { ...r, label: `MP3 · ${voiceLabel(cfg.voice)} (Microsoft)` };
+    } catch (e) {
+      console.warn(e);
+      setTtsCfg({ engine: 'piper' });
+      toast(`${e.message} Beralih otomatis ke "Suara AI di browser".`, 'error');
+      if (!(await confirmPiperDownload())) throw new Error('Dibatalkan.');
+    }
+  }
+  const r = await PiperTTS.synthesize(text, { speed: 1 + rate / 100, onStatus, onProgress });
+  return { ...r, label: `${r.type === 'audio/wav' ? 'WAV' : 'MP3'} · Suara AI` };
+}
+
+async function makeMp3(s, btn, { quiet = false } = {}) {
   const t = cleanForSpeech(narrationFor(s));
-  if (!t) { toast('Slide ini belum punya teks untuk dibacakan.', 'error'); return false; }
+  if (!t) { if (!quiet) toast('Slide ini belum punya teks untuk dibacakan.', 'error'); return false; }
+  if (engineOf() === 'piper' && !(await confirmPiperDownload())) return false;
   const old = btn ? [...btn.childNodes] : null;
-  if (btn) { btn.disabled = true; btn.replaceChildren(h('span', { class: 'spinner sm' }), `Membuat suara…`); }
+  let status = 'Membuat suara…', pct = null;
+  const paint = () => { if (btn) btn.replaceChildren(h('span', { class: 'spinner sm' }), pct != null && pct < 1 ? `${status} ${Math.round(pct * 100)}%` : status); };
+  if (btn) { btn.disabled = true; paint(); }
   try {
-    const blob = await new EdgeTTS(cfg.url).synthesize(t, { voice: cfg.voice || 'id-ID-GadisNeural', rate: +cfg.rate || 0, pitch: +cfg.pitch || 0 });
-    s.audio = { data: blob, name: 'narasi.mp3', type: 'audio/mpeg', source: `MP3 · ${(cfg.voice || 'id-ID-GadisNeural').replace(/^id-ID-|Neural$/g, '')}` };
+    const r = await synthesize(t, { onStatus: (x) => { status = x; paint(); }, onProgress: (x) => { pct = x; paint(); } });
+    s.audio = { data: r.blob, name: r.name, type: r.type, source: r.label };
     ctx.changed({ list: true });
     return true;
-  } catch (e) { toast(e.message, 'error'); return false; } finally {
+  } catch (e) { console.error(e); if (e.message !== 'Dibatalkan.') toast(e.message, 'error'); return false; } finally {
     if (btn) { btn.disabled = false; btn.replaceChildren(...old); }
   }
 }
@@ -379,9 +441,41 @@ function renderGaya() {
     h('div', { class: 'row wrap' }, color('accent', 'Warna utama'), color('accent2', 'Warna aksen'), color('bg', 'Latar')),
     h('div', { class: 'field' }, h('label', {}, 'Gaya huruf'), segmented(p.theme, 'font', ctx, [['modern', 'Modern'], ['klasik', 'Klasik'], ['bulat', 'Bulat']])),
     h('div', { class: 'field' }, h('label', {}, 'Transisi antar slide'), segmented(p.theme, 'transition', ctx, [['geser', 'Geser'], ['pudar', 'Pudar'], ['zoom', 'Zoom'], ['none', 'Tanpa']])),
+    h('div', { class: 'field' }, h('label', {}, 'Ukuran teks bawaan'), segmented(p, 'textSize', ctx, [['auto', 'Pas layar'], ['normal', 'Normal'], ['besar', 'Besar'], ['sangat', 'Sangat besar']]),
+      h('div', { class: 'hint' }, '"Pas layar" = teks slide materi diperbesar otomatis sampai memenuhi layar, seperti AutoFit di PowerPoint. Bisa diubah per slide.')),
+    presenterSettings(),
     h('div', { class: 'field' }, h('label', {}, 'Logo (pojok kiri atas & sertifikat)'), assetPicker(p, 'logo', ctx, { kind: 'image', label: 'Unggah logo', maxMB: 3 })),
     h('div', { class: 'field' }, h('label', {}, 'Gambar sampul halaman pembuka'), assetPicker(p, 'cover', ctx, { kind: 'image', label: 'Unggah gambar sampul', maxMB: 10, onSet: () => { $('pvCover').checked = true; schedulePreview(); } })),
   );
+}
+
+function presenterSettings() {
+  const pr = project.presenter;
+  const box = h('section', { class: 'presenter-set' });
+  const chars = window.StudioKarakter?.list || {};
+  const draw = () => {
+    const pick = (who) => { pr.who = who; pr.on = true; ctx.changed(); draw(); renderEditor(); };
+    const cards = h('div', { class: 'char-grid', role: 'radiogroup', 'aria-label': 'Pilih karakter' },
+      Object.entries(chars).map(([k, c]) => h('button', { class: 'char-card', type: 'button', role: 'radio', 'aria-checked': String(pr.on && pr.who === k), onclick: () => pick(k) },
+        h('span', { class: 'char-pic presenter-thumb', html: window.StudioKarakter.svg(k) }), h('b', {}, c.name), h('small', {}, c.desc))),
+      h('button', { class: 'char-card', type: 'button', role: 'radio', 'aria-checked': String(pr.on && pr.who === 'sendiri'), onclick: () => pick('sendiri') },
+        h('span', { class: 'char-pic own-pic' }, pr.img?.data ? h('img', { src: urlOf(pr.img.data), alt: '' }) : icon('upload')), h('b', {}, 'Karakter sendiri'), h('small', {}, 'Unggah PNG/GIF Anda')));
+    const own = pr.on && pr.who === 'sendiri' ? h('div', { class: 'stack' },
+      field('Nama karakter (opsional)', text(pr, 'name', ctx, { placeholder: 'Mis. Bu Ani' })),
+      h('div', { class: 'field' }, h('label', {}, 'Gambar karakter — mulut tertutup (wajib)'), assetPicker(pr, 'img', ctx, { kind: 'image', label: 'Unggah PNG transparan / GIF', maxMB: 4, onSet: () => draw() })),
+      h('div', { class: 'field' }, h('label', {}, 'Gambar mulut terbuka (opsional, untuk gerak bibir)'), assetPicker(pr, 'imgOpen', ctx, { kind: 'image', label: 'Unggah gambar yang sama dengan mulut terbuka', maxMB: 4 })),
+      h('p', { class: 'hint' }, 'Tips: pakai gambar berlatar transparan (PNG) dengan ukuran & posisi yang sama persis. Bila hanya 1 gambar, karakter akan bergoyang saat bicara. GIF animasi juga bisa.')) : null;
+    box.replaceChildren(...[
+      h('h3', {}, 'Karakter presenter (animasi)'),
+      toggle(pr, 'on', { changed: () => { ctx.changed(); draw(); renderEditor(); } }, 'Tampilkan karakter di kursus', 'Karakter berkedip, bernapas, menunjuk, melambai, dan bibirnya bergerak mengikuti narasi. Ketuk karakter untuk memutar narasi.'),
+      pr.on ? cards : null, own,
+      pr.on ? h('div', { class: 'grid2' },
+        h('div', { class: 'field' }, h('label', {}, 'Posisi'), segmented(pr, 'pos', ctx, [['kanan', 'Kanan bawah'], ['kiri', 'Kiri bawah']])),
+        h('div', { class: 'field' }, h('label', {}, 'Ukuran'), segmented(pr, 'size', ctx, [['kecil', 'Kecil'], ['sedang', 'Sedang'], ['besar', 'Besar']]))) : null,
+      pr.on ? h('p', { class: 'hint' }, 'Gaya karakter per slide (menunjuk, melambai, jempol…) diatur di bagian "Tampilan" pada tiap slide. Gerak bibir paling pas bila slide punya MP3 narasi.') : null].filter(Boolean));
+  };
+  draw();
+  return box;
 }
 
 function renderAtur() {
@@ -415,29 +509,61 @@ function renderAtur() {
 function renderSuara() {
   const panel = document.querySelector('[data-panel="suara"]');
   const cfg = ttsCfg();
-  // --- suara perangkat
-  const vSel = h('select', { 'aria-label': 'Suara perangkat' }, h('option', { value: '' }, 'Otomatis (suara Indonesia terbaik)'));
-  let voices = [];
-  // Daftar suara dimuat belakangan supaya panel langsung tampil (di HP daftar suara kadang lambat).
-  BrowserTTS.voices().then((list) => {
-    voices = list;
-    list.filter((v) => /^(id|in)[-_]/i.test(v.lang)).concat(list.filter((v) => !/^(id|in)[-_]/i.test(v.lang)).slice(0, 40))
-      .forEach((v) => vSel.append(h('option', { value: v.name, selected: v.name === project.narration.voiceName }, `${v.name} (${v.lang})`)));
-    if (!list.length) vSel.append(h('option', { value: '', disabled: true }, 'Perangkat ini belum punya suara terpasang'));
-  });
-  vSel.onchange = () => { project.narration.voiceName = vSel.value; ctx.changed(); };
-  const rate = h('input', { type: 'range', min: 0.7, max: 1.4, step: 0.05, value: project.narration.rate || 1, oninput: (e) => { project.narration.rate = +e.target.value; ctx.changed(); } });
-  const tryBtn = h('button', { class: 'btn', type: 'button', disabled: !BrowserTTS.supported, onclick: async () => {
-    const v = voices.find((x) => x.name === vSel.value) || voices.find((x) => /^(id|in)[-_]/i.test(x.lang)) || voices[0];
-    try { browserTTS.speak('Halo! Ini contoh suara narasi untuk kursus Anda.', { voice: v, rate: project.narration.rate }); } catch (e) { toast(e.message, 'error'); }
-  } }, icon('play'), 'Coba suara');
+  const engine = engineOf(cfg);
 
-  // --- server MP3
-  const url = h('input', { type: 'url', placeholder: 'https://huggingface.co/spaces/nama/tts-scorm', value: cfg.url || '' });
-  const status = h('div', { class: 'server-status' }, cfg.url ? h('span', { class: 'pill' }, 'Tersimpan — tekan Cek') : h('span', { class: 'pill off' }, 'Belum dipasang'));
+  // --- pilihan mesin MP3
+  const engines = [
+    ['piper', 'Suara AI di browser', 'Disarankan. Gratis, tanpa server, tanpa daftar akun. Unduhan pertama ±90 MB lalu tersimpan.'],
+    ['edge', 'Microsoft Gadis / Ardi', 'Suara paling natural, langsung dari browser (eksperimental). Bila ditolak Microsoft, otomatis pindah ke Suara AI.'],
+    ['server', 'Server sendiri (Hugging Face)', 'Gadis / Ardi lewat server gratis yang Anda pasang sendiri. Paling stabil untuk Gadis/Ardi.'],
+  ];
+  const engineCards = h('div', { class: 'engine-list', role: 'radiogroup', 'aria-label': 'Mesin suara MP3' }, engines.map(([k, name, desc]) => h('label', { class: 'engine-card' },
+    h('input', { type: 'radio', name: 'engine', value: k, checked: engine === k, onchange: () => { setTtsCfg({ engine: k }); renderSuara(); renderEditor(); } }),
+    h('span', {}, h('b', {}, name, k === 'piper' ? h('em', { class: 'tag' }, 'tanpa server') : null), h('small', {}, desc)))));
+
   const voiceSel = h('select', { 'aria-label': 'Suara MP3' }, [['id-ID-GadisNeural', 'Gadis — perempuan'], ['id-ID-ArdiNeural', 'Ardi — laki-laki']].map(([v, l]) => h('option', { value: v, selected: (cfg.voice || 'id-ID-GadisNeural') === v }, l)));
   voiceSel.onchange = () => setTtsCfg({ voice: voiceSel.value });
-  const rateIn = h('input', { type: 'range', min: -30, max: 30, step: 5, value: cfg.rate || 0, oninput: (e) => setTtsCfg({ rate: +e.target.value }) });
+  const rateOut = h('b', { class: 'big-num' }, `${(+cfg.rate || 0) > 0 ? '+' : ''}${+cfg.rate || 0}%`);
+  const rateIn = h('input', { type: 'range', min: -30, max: 30, step: 5, value: cfg.rate || 0, 'aria-label': 'Kecepatan bicara', oninput: (e) => { setTtsCfg({ rate: +e.target.value }); rateOut.textContent = `${+e.target.value > 0 ? '+' : ''}${e.target.value}%`; } });
+
+  const sample = h('audio', { controls: true, hidden: true });
+  const tryBtn = h('button', { class: 'btn', type: 'button' }, icon('play'), 'Coba suara ini');
+  tryBtn.onclick = async () => {
+    if (engineOf() === 'piper' && !(await confirmPiperDownload())) return;
+    const old = [...tryBtn.childNodes]; tryBtn.disabled = true;
+    let st = 'Menyiapkan…', pct = null;
+    const paint = () => tryBtn.replaceChildren(h('span', { class: 'spinner sm' }), pct != null && pct < 1 ? `${st} ${Math.round(pct * 100)}%` : st);
+    paint();
+    try {
+      const r = await synthesize('Halo! Selamat datang di pelatihan keselamatan kerja. Pastikan alat pelindung diri Anda lengkap sebelum mulai bekerja.', { onStatus: (x) => { st = x; paint(); }, onProgress: (x) => { pct = x; paint(); } });
+      sample.src = URL.createObjectURL(r.blob); sample.hidden = false; sample.play().catch(() => {});
+    } catch (e) { toast(e.message, 'error'); } finally { tryBtn.disabled = false; tryBtn.replaceChildren(...old); }
+  };
+
+  const allBtn = h('button', { class: 'btn btn-magic', type: 'button' }, icon('sparkle'), 'Buat MP3 untuk semua slide');
+  const allProg = h('div', { class: 'progress', hidden: true }, h('div'));
+  allBtn.onclick = async () => {
+    const targets = project.slides.filter((s) => cleanForSpeech(narrationFor(s)));
+    if (!targets.length) return toast('Belum ada slide yang punya teks.', 'error');
+    const withAudio = targets.filter((s) => s.audio).length;
+    const onlyMissing = withAudio && !confirm(`${withAudio} slide sudah punya audio.\n\nOK = buat ulang SEMUA slide\nBatal = hanya slide yang belum punya audio`);
+    const list = onlyMissing ? targets.filter((s) => !s.audio) : targets;
+    if (!list.length) return toast('Semua slide sudah punya audio.');
+    if (engineOf() === 'piper' && !(await confirmPiperDownload())) return;
+    allBtn.disabled = true; allProg.hidden = false; allProg.firstChild.style.width = '0%';
+    let ok = 0;
+    for (const [i, s] of list.entries()) {
+      allBtn.replaceChildren(h('span', { class: 'spinner sm' }), `Slide ${i + 1} dari ${list.length}…`);
+      if (!(await makeMp3(s, null, { quiet: true }))) break;
+      ok++; allProg.firstChild.style.width = `${(ok / list.length) * 100}%`;
+    }
+    allBtn.disabled = false; allBtn.replaceChildren(icon('sparkle'), 'Buat MP3 untuk semua slide');
+    toast(`${ok} dari ${list.length} slide sudah punya MP3.`, ok === list.length ? 'ok' : 'error'); renderEditor();
+  };
+
+  // --- server sendiri
+  const url = h('input', { type: 'url', placeholder: 'https://huggingface.co/spaces/nama/tts-scorm', value: cfg.url || '' });
+  const status = h('div', { class: 'server-status' }, cfg.url ? h('span', { class: 'pill' }, 'Tersimpan — tekan Cek') : h('span', { class: 'pill off' }, 'Belum dipasang'));
   const check = async () => {
     const u = normalizeServerUrl(url.value);
     url.value = u; setTtsCfg({ url: u });
@@ -446,53 +572,58 @@ function renderSuara() {
       const api = new EdgeTTS(u);
       await api.health();
       const list = await api.voices('id');
-      voiceSel.replaceChildren(...list.map((v) => h('option', { value: v.name, selected: v.name === (ttsCfg().voice || 'id-ID-GadisNeural') }, `${v.name.replace(/^[a-z]{2}-[A-Z]{2}-/, '').replace(/Neural$/, '')} — ${v.locale}, ${v.gender.toLowerCase()}${v.multilingual ? ', multibahasa' : ''}`)));
+      voiceSel.replaceChildren(...list.map((v) => h('option', { value: v.name, selected: v.name === (ttsCfg().voice || 'id-ID-GadisNeural') }, `${voiceLabel(v.name)} — ${v.locale}, ${v.gender.toLowerCase()}`)));
       status.replaceChildren(h('span', { class: 'pill ok' }, icon('check'), 'Terhubung'), ` ${list.length} suara tersedia`);
-      renderEditor();
     } catch (e) { status.replaceChildren(h('span', { class: 'pill off' }, 'Gagal'), ` ${e.message}`); }
   };
-  const allBtn = h('button', { class: 'btn btn-magic', type: 'button' }, icon('sparkle'), 'Buat MP3 untuk semua slide');
-  const allProg = h('div', { class: 'progress', hidden: true }, h('div'));
-  allBtn.onclick = async () => {
-    if (!ttsCfg().url) return toast('Isi alamat server dulu, lalu tekan Cek.', 'error');
-    const targets = project.slides.filter((s) => cleanForSpeech(narrationFor(s)));
-    if (project.slides.some((s) => s.audio) && !confirm('Slide yang sudah punya audio akan diganti MP3 baru. Lanjutkan?')) return;
-    allBtn.disabled = true; allProg.hidden = false;
-    let ok = 0;
-    for (const [i, s] of targets.entries()) {
-      allBtn.replaceChildren(h('span', { class: 'spinner sm' }), `Slide ${i + 1} dari ${targets.length}…`);
-      if (!(await makeMp3(s))) break;
-      ok++; allProg.firstChild.style.width = `${(ok / targets.length) * 100}%`;
-    }
-    allBtn.disabled = false; allBtn.replaceChildren(icon('sparkle'), 'Buat MP3 untuk semua slide');
-    toast(`${ok} dari ${targets.length} slide sudah punya MP3.`); renderEditor();
-  };
   const dl = (f) => h('a', { class: 'btn btn-sm', href: f, download: f }, icon('download'), f);
-
-  panel.replaceChildren(
-    h('div', { class: 'callout' }, icon('info'), h('div', {}, h('b', {}, 'Tiga cara memberi suara — semuanya gratis'),
-      h('ol', {}, h('li', {}, h('b', {}, 'Suara perangkat'), ' — langsung jalan, tanpa pemasangan.'), h('li', {}, h('b', {}, 'Rekam sendiri'), ' — tombol "Rekam suara" di setiap slide.'), h('li', {}, h('b', {}, 'MP3 natural'), ' — suara Gadis/Ardi, perlu server gratis sekali pasang (panduan di bawah).')))),
-    h('h3', {}, '1. Suara perangkat'),
-    field('Suara yang dipakai', vSel, 'Di paket SCORM, perangkat peserta memakai suara Indonesia terbaik yang tersedia di perangkatnya.'),
-    h('div', { class: 'field' }, h('label', {}, 'Kecepatan bicara'), rate),
-    tryBtn,
-    h('h3', {}, '2. MP3 suara natural (opsional)'),
+  const serverBox = engine !== 'server' ? null : h('div', { class: 'stack' },
     field('Alamat server suara', h('div', { class: 'row' }, url, h('button', { class: 'btn', type: 'button', onclick: check }, 'Cek')), 'Tempel alamat Space Hugging Face Anda. Disimpan di perangkat ini.'),
     status,
-    h('div', { class: 'grid2' }, field('Suara', voiceSel), h('div', { class: 'field' }, h('label', {}, 'Kecepatan'), rateIn)),
-    allBtn, allProg,
     h('details', { class: 'guide', open: !cfg.url },
       h('summary', {}, icon('book'), 'Panduan: pasang server suara gratis di Hugging Face (±10 menit, sekali saja)'),
       h('ol', { class: 'steps' },
-        h('li', {}, 'Unduh 3 file ini ke HP/laptop:', h('div', { class: 'row wrap' }, dl('main.py'), dl('requirements.txt'), dl('Dockerfile'))),
+        h('li', {}, 'Unduh 3 file ini:', h('div', { class: 'row wrap' }, dl('main.py'), dl('requirements.txt'), dl('Dockerfile'))),
         h('li', {}, 'Daftar gratis di ', h('a', { href: 'https://huggingface.co/join', target: '_blank', rel: 'noopener' }, 'huggingface.co'), ', lalu buka ', h('a', { href: 'https://huggingface.co/new-space', target: '_blank', rel: 'noopener' }, 'New Space'), '.'),
         h('li', {}, 'Isi nama Space (mis. ', h('code', {}, 'tts-scorm'), '), pilih SDK ', h('b', {}, 'Docker → Blank'), ', hardware ', h('b', {}, 'CPU basic (Free)'), ', visibilitas ', h('b', {}, 'Public'), ' → Create Space.'),
-        h('li', {}, 'Di Space: tab ', h('b', {}, 'Files → Add file → Upload files'), ' → pilih ketiga file tadi → ', h('b', {}, 'Commit'), '. (Tanpa folder — cukup 3 file.)'),
-        h('li', {}, 'Tunggu ±3–5 menit sampai status di atas Space berubah ', h('b', {}, 'Running'), '.'),
-        h('li', {}, 'Salin alamat Space dari browser (mis. ', h('code', {}, 'https://huggingface.co/spaces/nama/tts-scorm'), '), tempel ke kotak di atas, tekan ', h('b', {}, 'Cek'), '.')),
-      h('p', { class: 'hint' }, 'Space gratis "tidur" bila 48 jam tidak dipakai — buka alamatnya sekali untuk membangunkan. Bila suatu saat gagal membuat suara, buka Settings Space → Factory rebuild agar memakai edge-tts terbaru. Catatan: edge-tts memakai layanan suara Microsoft Edge yang tidak resmi; audio yang sudah jadi tetap aman tersimpan di paket.')),
-  );
-  if (cfg.url) check();
+        h('li', {}, 'Di Space: tab ', h('b', {}, 'Files → Add file → Upload files'), ' → pilih ketiga file → ', h('b', {}, 'Commit'), '.'),
+        h('li', {}, 'Tunggu ±3–5 menit sampai status Space ', h('b', {}, 'Running'), '.'),
+        h('li', {}, 'Salin alamat Space, tempel ke kotak di atas, tekan ', h('b', {}, 'Cek'), '.')),
+      h('p', { class: 'hint' }, 'Space gratis "tidur" bila 48 jam tidak dipakai — buka alamatnya sekali untuk membangunkan.')));
+
+  // --- suara perangkat (cadangan untuk slide tanpa MP3)
+  const vSel = h('select', { 'aria-label': 'Suara perangkat' }, h('option', { value: '' }, 'Otomatis (suara Indonesia terbaik)'));
+  let voices = [];
+  BrowserTTS.voices().then((list) => {
+    voices = list;
+    list.filter((v) => /^(id|in)[-_]/i.test(v.lang)).concat(list.filter((v) => !/^(id|in)[-_]/i.test(v.lang)).slice(0, 40))
+      .forEach((v) => vSel.append(h('option', { value: v.name, selected: v.name === project.narration.voiceName }, `${v.name} (${v.lang})`)));
+    if (!list.length) vSel.append(h('option', { value: '', disabled: true }, 'Perangkat ini belum punya suara terpasang'));
+  });
+  vSel.onchange = () => { project.narration.voiceName = vSel.value; ctx.changed(); };
+  const devRate = h('input', { type: 'range', min: 0.7, max: 1.4, step: 0.05, value: project.narration.rate || 1, 'aria-label': 'Kecepatan suara perangkat', oninput: (e) => { project.narration.rate = +e.target.value; ctx.changed(); } });
+  const devTry = h('button', { class: 'btn btn-sm', type: 'button', disabled: !BrowserTTS.supported, onclick: async () => {
+    const v = voices.find((x) => x.name === vSel.value) || voices.find((x) => /^(id|in)[-_]/i.test(x.lang)) || voices[0];
+    try { browserTTS.speak('Halo! Ini suara perangkat.', { voice: v, rate: project.narration.rate }); } catch (e) { toast(e.message, 'error'); }
+  } }, icon('play'), 'Coba');
+  const missing = project.slides.filter((s) => !s.audio && cleanForSpeech(narrationFor(s))).length;
+
+  panel.replaceChildren(...[
+    h('h3', {}, 'Mesin suara MP3'),
+    engineCards,
+    engine !== 'piper' ? field('Suara', voiceSel) : h('p', { class: 'hint' }, 'Satu suara Bahasa Indonesia (model Piper, lisensi MIT). Suara dibuat di perangkat Anda — teks tidak dikirim ke server mana pun.'),
+    h('div', { class: 'field' }, h('label', {}, 'Kecepatan bicara'), h('div', { class: 'row' }, rateIn, rateOut)),
+    h('div', { class: 'row wrap' }, tryBtn), sample,
+    serverBox,
+    h('div', { class: 'callout' }, icon('info'), h('div', {}, h('b', {}, missing ? `${missing} slide belum punya MP3` : 'Semua slide sudah punya audio'),
+      h('p', { class: 'hint' }, 'Slide yang punya MP3 terdengar sama persis di semua perangkat peserta. Slide tanpa MP3 dibacakan suara perangkat peserta (sering terdengar seperti robot).'))),
+    allBtn, allProg,
+    h('h3', {}, 'Suara cadangan: suara perangkat'),
+    toggle(project.narration, 'browser', ctx, 'Bacakan slide tanpa MP3 dengan suara perangkat peserta', 'Gratis, tanpa server. Kualitas tergantung HP/laptop peserta.'),
+    field('Suara perangkat', vSel),
+    h('div', { class: 'field' }, h('label', {}, 'Kecepatan suara perangkat'), h('div', { class: 'row' }, devRate, devTry)),
+  ].filter(Boolean));
+  if (engine === 'server' && cfg.url) check();
 }
 
 // ================================================================ tambah slide & impor
@@ -561,7 +692,8 @@ async function mapAssets(v, fn) {
 async function exportProject() {
   const b = busy('Menyiapkan file proyek…');
   try {
-    const copy = await mapAssets(project, async (a) => ({ ...a, data: await blobToDataUrl(a.data) }));
+    const enc = async (a) => ({ ...a, data: await blobToDataUrl(a.data), original: a.original?.data ? await enc(a.original) : undefined });
+    const copy = await mapAssets(project, enc);
     const blob = new Blob([JSON.stringify({ format: 'studio-scorm-proyek', formatVersion: 2, project: copy })], { type: 'application/json' });
     download(blob, `${(project.title || 'proyek').replace(/[^\w-]+/g, '-').toLowerCase()}.studio-scorm.json`);
   } finally { b.done(); }
@@ -571,7 +703,7 @@ async function openProjectJson(json) {
   const revive = async (v) => {
     if (v && typeof v === 'object' && typeof v.data === 'string' && v.data.startsWith('data:')) {
       const blob = await (await fetch(v.data)).blob();
-      return { ...v, data: blob, type: v.type || blob.type };
+      return { ...v, data: blob, type: v.type || blob.type, original: v.original ? await revive(v.original) : undefined };
     }
     if (Array.isArray(v)) return Promise.all(v.map(revive));
     if (v && typeof v === 'object') { const o = {}; for (const [k, x] of Object.entries(v)) o[k] = await revive(x); return o; }

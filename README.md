@@ -41,7 +41,7 @@ Fitur kursus: menu daftar isi, navigasi **bebas** atau **harus berurutan**, teks
 
 | File | Hasil |
 |---|---|
-| **PowerPoint (.pptx)** | 1 slide per halaman: judul, poin, tabel, gambar terbesar, video tertanam; **catatan pembicara → naskah narasi** |
+| **PowerPoint (.pptx)** | 1 slide per halaman: judul, poin (teks **tebal** ikut), tabel, gambar terbesar **sesuai potongan (crop) di PowerPoint**, video tertanam; ukuran huruf PowerPoint dipakai sebagai ukuran minimal; **catatan pembicara → naskah narasi** |
 | **PDF** | 1 slide gambar per halaman — tampilan persis seperti aslinya (opsi: teks halaman jadi naskah narasi) |
 | **Word (.docx)** | 1 slide per judul (Heading 1/2), poin & gambar ikut |
 | **Gambar / GIF** (banyak sekaligus) | 1 slide gambar per file |
@@ -52,20 +52,33 @@ Tips: ingin tampilan PowerPoint **persis sama** (font, animasi diam)? Di PowerPo
 
 Bisa juga **menyeret file ke mana saja** di layar Builder.
 
+**Potong gambar:** setiap gambar di Builder punya tombol **Potong** (bebas, 16:9, 4:3, kotak, tegak, putar 90°). Gambar asli tetap disimpan, jadi bisa **Kembalikan gambar asli** kapan saja.
+
+**Ukuran teks:** tab **Gaya → Ukuran teks bawaan**, atau per slide di bagian **Tampilan**. Pilihan **Pas layar** memperbesar teks slide materi sampai memenuhi layar peserta — mirip AutoFit di PowerPoint.
+
 ## 4. Suara / narasi (semuanya gratis)
 
-1. **Suara perangkat** — langsung jalan tanpa pemasangan. Saat kursus dibuka, perangkat peserta membacakan naskah dengan suara Indonesia terbaik yang tersedia (Android: suara Google; Microsoft Edge: suara "Online Natural").
-2. **Rekam sendiri** — tombol **Rekam suara** di setiap slide (izinkan mikrofon).
-3. **MP3 suara natural** — suara Neural **Gadis** & **Ardi** lewat server kecil (`main.py`). Pasang sekali di **Hugging Face Spaces** (gratis):
-   1. Di Builder → tab **Suara**, unduh `main.py`, `requirements.txt`, `Dockerfile` (atau ambil dari repo ini).
+Tab **Suara** → pilih **mesin suara MP3**, lalu tombol **Buat MP3 natural** (per slide) atau **Buat MP3 untuk semua slide**:
+
+1. **Suara AI di browser** *(bawaan, tanpa server)* — suara Bahasa Indonesia dari model [Piper](https://huggingface.co/rhasspy/piper-voices) (lisensi MIT) yang dijalankan **langsung di browser**. Tidak perlu daftar akun atau server. Pertama kali, browser mengunduh model ±90 MB (pakai Wi-Fi), lalu tersimpan untuk pemakaian berikutnya. Teks tidak dikirim ke mana pun. Butuh akses internet ke `cdn.jsdelivr.net` dan `huggingface.co` untuk unduhan pertama.
+2. **Microsoft Gadis / Ardi** *(eksperimental)* — suara Neural Microsoft dihubungi langsung dari browser. Bila Microsoft menolak sambungan, aplikasi otomatis beralih ke Suara AI di browser.
+3. **Server sendiri** — Gadis/Ardi lewat server kecil (`main.py`) di **Hugging Face Spaces** (gratis):
+   1. Unduh `main.py`, `requirements.txt`, `Dockerfile` (tab Suara, atau dari repo ini).
    2. Daftar di [huggingface.co](https://huggingface.co/join) → [New Space](https://huggingface.co/new-space) → SDK **Docker → Blank**, hardware **CPU basic (Free)**, **Public** → Create.
-   3. Di Space: **Files → Add file → Upload files** → 3 file tadi → Commit.
-   4. Tunggu status **Running** (±3–5 menit).
-   5. Salin alamat Space (mis. `https://huggingface.co/spaces/nama/tts-scorm`) → tempel di tab Suara → **Cek** → **Buat MP3 untuk semua slide**.
+   3. Di Space: **Files → Add file → Upload files** → 3 file tadi → Commit. Tunggu status **Running**.
+   4. Tempel alamat Space di tab Suara → **Cek**.
 
-   Space gratis tertidur setelah 48 jam tidak dipakai; buka alamatnya untuk membangunkan. Bila suatu saat gagal, buka *Settings → Factory rebuild* agar memakai `edge-tts` terbaru.
+Pilihan lain: **Rekam suara** sendiri di setiap slide, atau **Unggah audio**. Slide tanpa MP3 dibacakan **suara perangkat peserta** (bisa dimatikan) — kualitasnya tergantung HP/laptop peserta, jadi sebaiknya semua slide diberi MP3.
 
-> **Catatan jujur:** `edge-tts` memakai layanan suara Microsoft Edge yang **tidak resmi** — gratis dan bagus, tetapi tanpa jaminan. Karena audio disimpan sebagai MP3 di dalam paket, kursus yang sudah jadi tetap bersuara walau layanan berubah. Untuk pemakaian resmi/komersial skala besar, pertimbangkan Azure AI Speech (tier gratis 0,5 juta karakter/bulan) dengan mengganti fungsi `synthesize_chunk` di `main.py`.
+> **Catatan jujur:** jalur Microsoft (langsung maupun lewat `edge-tts`) memakai layanan suara Microsoft Edge yang **tidak resmi** — gratis dan bagus, tetapi tanpa jaminan. Audio disimpan sebagai MP3 di dalam paket, jadi kursus yang sudah jadi tetap bersuara walau layanan berubah.
+
+## 4b. Karakter presenter animasi
+
+Tab **Gaya → Karakter presenter**: nyalakan, lalu pilih karakter bawaan (Raka, Sari, Nisa, Pak Budi, dr. Dewi — gambar vektor buatan sendiri, bebas dipakai) atau **Karakter sendiri** (unggah PNG transparan/GIF; opsional gambar kedua dengan mulut terbuka untuk gerak bibir).
+
+- Karakter berkedip, bernapas, dan **bibirnya bergerak mengikuti narasi** (paling pas dengan MP3).
+- Pose per slide (bagian **Tampilan** di tiap slide): Otomatis, Menunjuk, Melambai, Jempol, Berpikir, Diam, Sembunyikan. Mode Otomatis: melambai di awal, menunjuk materi, berpikir saat kuis, jempol bila jawaban benar.
+- Posisi kanan/kiri bawah, ukuran kecil/sedang/besar. Peserta bisa mengetuk karakter untuk memutar narasi. Teks tidak akan tertutup karakter.
 
 Kamus pelafalan (K3 → "K tiga", APD → "A P D", dll.) ada di `tts.js` → `PRONUNCIATION`.
 
@@ -77,14 +90,15 @@ Kamus pelafalan (K3 → "K tiga", APD → "A P D", dll.) ada di `tts.js` → `PR
 | `builder.html`, `builder.js` | Aplikasi Builder |
 | `editors.js` | Formulir tiap jenis slide |
 | `importers.js` | Impor PPTX, PDF, DOCX, gambar, video, HTML/ZIP |
-| `tts.js` | Suara perangkat, perekam mikrofon, klien server MP3 |
+| `tts.js` | Suara perangkat, perekam mikrofon, Suara AI di browser (Piper), Microsoft langsung, klien server MP3 |
+| `crop.js` | Potong & putar gambar (juga dipakai saat impor PowerPoint) |
 | `ui.js` | Komponen antarmuka (ikon, dialog, notifikasi) |
 | `app.css` | Tampilan aplikasi (terang & gelap) |
 | `preview.html` | Pratinjau langsung di Builder |
 | `player.html`, `player.js`, `sw.js` | SCORM Player (`sw.js` wajib sejajar `player.html`) |
 | `package-store.js`, `scorm-runtime.js` | Ekstrak `.zip` & API LMS (SCORM 1.2 dan 2004) |
 | `packager.js`, `manifest.js` | Merakit paket `.zip` + `imsmanifest.xml` |
-| `paket-index.html`, `course.js`, `course.css`, `scorm-api.js` | **Template** yang disalin ke setiap paket SCORM (`paket-index.html` menjadi `index.html` di dalam zip) |
+| `paket-index.html`, `course.js`, `course.css`, `scorm-api.js`, `karakter.js` | **Template** yang disalin ke setiap paket SCORM (`paket-index.html` menjadi `index.html` di dalam zip) |
 | `store.js`, `util.js` | Penyimpanan IndexedDB & fungsi bantu |
 | `jszip.min.js` | JSZip 3.10 (MIT/GPLv3) |
 | `pdf.min.mjs`, `pdf.worker.min.mjs` | PDF.js 5 (Apache-2.0) untuk impor PDF |

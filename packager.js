@@ -4,7 +4,7 @@
 // Isi paket yang dihasilkan (folder di DALAM zip dibuat otomatis):
 //   imsmanifest.xml        daftar isi untuk LMS
 //   index.html             halaman yang dibuka LMS (dari paket-index.html)
-//   assets/course.js       mesin kursus · assets/course.css · assets/scorm-api.js
+//   assets/course.js       mesin kursus · assets/course.css · assets/scorm-api.js · assets/karakter.js
 //   assets/course-data.js  isi kursus Anda
 //   media/...              gambar, GIF, video, audio narasi
 //   html-01/...            slide HTML (file, kode, atau mini-website .zip)
@@ -12,7 +12,9 @@
 import { buildManifest } from './manifest.js';
 import { escapeXml, slugify, normalizeZipPath } from './util.js';
 
-export const TEMPLATE_FILES = ['paket-index.html', 'course.css', 'scorm-api.js', 'course.js'];
+export const TEMPLATE_FILES = ['paket-index.html', 'course.css', 'scorm-api.js', 'course.js', 'karakter.js'];
+export const POSES = ['auto', 'diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'sembunyi'];
+export const TEXT_SIZES = ['auto', 'normal', 'besar', 'sangat'];
 export const SLIDE_TYPES = ['content', 'image', 'video', 'html', 'flip', 'hotspot', 'quiz', 'sort'];
 
 /** Ambil file template dari root aplikasi (di browser). */
@@ -107,6 +109,9 @@ export async function toCourseData(project, putAsset, putHtml) {
   for (const [i, s] of project.slides.entries()) {
     const n = String(i + 1).padStart(2, '0');
     const base = { id: String(s.id).replace(/[^A-Za-z0-9_-]/g, '_'), type: s.type, title: (s.title || '').trim(), narration: s.narration || '' };
+    if (TEXT_SIZES.includes(s.textSize)) base.textSize = s.textSize;
+    if (+s.textMin > 1) base.textMin = Math.min(1.8, +s.textMin);
+    if (POSES.includes(s.pose) && s.pose !== 'auto') base.pose = s.pose;
     base.audio = await a(s.audio, `narasi-${n}`);
     let o;
     switch (s.type) {
@@ -144,6 +149,13 @@ export async function toCourseData(project, putAsset, putHtml) {
     slides.push({ ...base, ...o });
   }
   const t = project.theme || {};
+  const pr = project.presenter || {};
+  const presenter = pr.on ? {
+    on: true, who: pr.who || 'raka', name: pr.who === 'sendiri' ? (pr.name || '') : '', pos: pr.pos === 'kiri' ? 'kiri' : 'kanan', size: ['kecil', 'besar'].includes(pr.size) ? pr.size : 'sedang',
+    img: pr.who === 'sendiri' ? await a(pr.img, 'karakter') : null,
+    imgOpen: pr.who === 'sendiri' ? await a(pr.imgOpen, 'karakter-bicara') : null,
+  } : { on: false };
+  if (presenter.on && pr.who === 'sendiri' && !presenter.img) presenter.on = false;
   return {
     title: (project.title || '').trim(),
     description: project.description || '',
@@ -159,6 +171,8 @@ export async function toCourseData(project, putAsset, putHtml) {
       browser: project.narration?.browser !== false, autoplay: !!project.narration?.autoplay,
       voiceName: project.narration?.voiceName || '', rate: +project.narration?.rate || 1,
     },
+    textSize: TEXT_SIZES.includes(project.textSize) ? project.textSize : 'auto',
+    presenter,
     slides,
     builtWith: 'Studio SCORM',
     builtAt: new Date().toISOString(),
@@ -226,6 +240,7 @@ export async function buildPackage(project, { template, JSZip = globalThis.JSZip
   zip.file('assets/course.css', template['course.css']);
   zip.file('assets/scorm-api.js', template['scorm-api.js']);
   zip.file('assets/course.js', template['course.js']);
+  zip.file('assets/karakter.js', template['karakter.js']);
 
   const files = Object.keys(zip.files).filter((f) => !zip.files[f].dir);
   const identifier = `${slugify(data.title)}-${String(project.id || '').replace(/[^A-Za-z0-9]/g, '').slice(-6) || 'kursus'}`;

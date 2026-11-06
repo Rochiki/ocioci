@@ -9,6 +9,9 @@
 
    Mode pratinjau (window.STUDIO_PREVIEW): data dikirim Builder lewat
    postMessage, tidak ada yang disimpan.
+
+   Tambahan: ukuran teks otomatis "pas layar" dan karakter presenter
+   animasi (karakter.js) yang bergerak bibir mengikuti narasi.
    ============================================================ */
 (function () {
   'use strict';
@@ -178,7 +181,7 @@
   function stopNarration() {
     try { audio.pause(); } catch (e) {}
     if (window.speechSynthesis) speechSynthesis.cancel();
-    speaking = false; narrationOn = false; syncVoiceBtn();
+    speaking = false; narrationOn = false; syncVoiceBtn(); talk(false);
   }
   function syncVoiceBtn() {
     var b = $('#btnVoice'); if (!b) return;
@@ -193,26 +196,170 @@
       if (audio.getAttribute('data-src') !== s.audio) { audio.src = s.audio; audio.setAttribute('data-src', s.audio); }
       else audio.currentTime = 0;
       narrationOn = true; syncVoiceBtn();
-      audio.onended = function () { narrationOn = false; syncVoiceBtn(); };
+      audio.onended = function () { narrationOn = false; syncVoiceBtn(); talk(false); };
+      audio.onpause = function () { talk(false); };
+      audio.onplaying = function () { talk('audio'); };
+      attachAnalyser();
       var p = audio.play();
-      if (p && p.catch) p.catch(function () { narrationOn = false; syncVoiceBtn(); });
+      if (p && p.catch) p.catch(function () { narrationOn = false; syncVoiceBtn(); talk(false); });
       return;
     }
     if (!(C.narration && C.narration.browser) || !window.speechSynthesis) return;
     var parts = narrationText(s).replace(/([.!?])\s+/g, '$1\n').split(/\n+/).filter(Boolean);
     var voice = pickVoice();
     var rate = (C.narration && C.narration.rate) || 1;
-    speaking = true; narrationOn = true; syncVoiceBtn();
+    speaking = true; narrationOn = true; syncVoiceBtn(); talk('tts');
     (function next() {
       if (!speaking) return;
-      if (!parts.length) { speaking = false; narrationOn = false; syncVoiceBtn(); return; }
+      if (!parts.length) { speaking = false; narrationOn = false; syncVoiceBtn(); talk(false); return; }
       var u = new SpeechSynthesisUtterance(parts.shift());
       u.lang = voice ? voice.lang : 'id-ID'; if (voice) u.voice = voice; u.rate = rate;
-      u.onend = next; u.onerror = function () { speaking = false; narrationOn = false; syncVoiceBtn(); };
+      u.onend = next; u.onerror = function () { speaking = false; narrationOn = false; syncVoiceBtn(); talk(false); };
       speechSynthesis.speak(u);
     })();
   }
   function toggleNarration() { if (narrationOn) stopNarration(); else startNarration(); }
+
+  // ------------------------------------------------------------ ukuran teks (pas layar)
+  var SIZES = { normal: 1, besar: 1.3, sangat: 1.6 };
+  function setFs(main, f) {
+    main.style.setProperty('--fs', f.toFixed(3));
+    main.style.setProperty('--ts', (1 + (f - 1) * 0.6).toFixed(3));
+    main.classList.toggle('wide-text', f > 1.45);
+  }
+  function contentHeight(main) {
+    var top = main.getBoundingClientRect().top, bottom = top;
+    Array.prototype.forEach.call(main.children, function (ch) {
+      if (ch.offsetParent === null && getComputedStyle(ch).position !== 'fixed') return;
+      bottom = Math.max(bottom, ch.getBoundingClientRect().bottom);
+    });
+    var cs = getComputedStyle(main);
+    return bottom - top + parseFloat(cs.paddingBottom || 0);
+  }
+  function availHeight() {
+    var bar = $('.bar'), nav = $('.nav');
+    return window.innerHeight - (bar ? bar.offsetHeight : 0) - (nav ? nav.offsetHeight : 0);
+  }
+  /** Perbesar teks slide materi sampai hampir memenuhi layar (seperti AutoFit PowerPoint). */
+  function fitText() {
+    var main = $('#slide'); var s = slides[state && state.i];
+    if (!main || !s) return;
+    var mode = s.textSize || C.textSize || 'auto';
+    var min = Math.max(0.85, Math.min(1.8, +s.textMin || 1));
+    if (SIZES[mode]) { setFs(main, SIZES[mode]); return; }
+    if (mode !== 'auto' || (s.type !== 'content')) { setFs(main, s.type === 'content' ? min : 1); return; }
+    var avail = availHeight(), lo = min, hi = 2.6;
+    setFs(main, lo);
+    if (contentHeight(main) > avail) return; // sudah penuh: biarkan bergulir
+    for (var k = 0; k < 8; k++) { var mid = (lo + hi) / 2; setFs(main, mid); if (contentHeight(main) <= avail - 4) lo = mid; else hi = mid; }
+    setFs(main, lo);
+  }
+  var fitTimer;
+  function refit() { clearTimeout(fitTimer); fitTimer = setTimeout(fitText, 60); }
+  window.addEventListener('resize', refit);
+
+  // ------------------------------------------------------------ karakter presenter
+  var P = { el: null, cfg: null, mode: false, raf: 0, level: 0, ctx: null, an: null, buf: null, srcAttached: false, t0: 0 };
+  function presenterOn() { return !!(C && C.presenter && C.presenter.on && (C.presenter.img || (window.StudioKarakter && C.presenter.who))); }
+  function buildPresenter() {
+    var sig = presenterOn() ? JSON.stringify(C.presenter) : '';
+    if (P.el && sig === P.sig) return; // pratinjau Builder: jangan bangun ulang bila tidak berubah
+    if (P.el) { P.el.remove(); P.el = null; }
+    P.sig = sig;
+    document.body.classList.remove('with-presenter');
+    if (!sig) return;
+    var c = C.presenter;
+    var inner = c.img
+      ? '<div class="own ' + (c.imgOpen ? 'two' : 'one') + '"><img class="closed" src="' + esc(c.img) + '" alt="">' + (c.imgOpen ? '<img class="open" src="' + esc(c.imgOpen) + '" alt="">' : '') + '</div>'
+      : window.StudioKarakter.svg(c.who);
+    var el = document.createElement('div');
+    el.className = 'presenter off pos-' + (c.pos === 'kiri' ? 'kiri' : 'kanan') + ' size-' + (c.size || 'sedang');
+    el.setAttribute('data-pose', 'diam'); el.setAttribute('data-m', '0'); el.setAttribute('data-talk', '0');
+    el.innerHTML = '<button class="presenter-btn" type="button" aria-label="' + esc((c.name || 'Karakter') + ': putar atau hentikan narasi') + '">' + inner + '</button>';
+    el.querySelector('button').onclick = function () {
+      var s = slides[state && state.i];
+      if (s && document.getElementById('slide') && canNarrate(s)) toggleNarration();
+    };
+    document.body.appendChild(el);
+    P.el = el;
+  }
+  /** Tampilkan karakter dengan pose tertentu (atau sembunyikan bila pose = 'sembunyi'). */
+  function pose(name, where) {
+    if (!P.el) return;
+    var hide = !name || name === 'sembunyi';
+    P.el.classList.toggle('off', hide);
+    P.el.classList.toggle('at-start', where === 'start');
+    document.body.classList.toggle('with-presenter', !hide && where !== 'start');
+    if (!hide) P.el.setAttribute('data-pose', name);
+    document.body.style.setProperty('--pw', P.el.offsetWidth + 'px');
+    document.body.style.setProperty('--ph-h', P.el.offsetHeight + 'px');
+  }
+  function autoPose(s, idx) {
+    if (s.pose && s.pose !== 'auto') return s.pose;
+    if (idx === 0) return 'lambai';
+    if (s.type === 'quiz' || s.type === 'sort') return state.d[s.id] ? (sortOrQuizRight(s) ? 'jempol' : 'pikir') : 'pikir';
+    if (idx === slides.length - 1) return 'jempol';
+    if (s.type === 'hotspot' || s.type === 'flip') return 'tunjuk';
+    return idx % 3 === 2 ? 'diam' : 'tunjuk';
+  }
+  function sortOrQuizRight(s) {
+    if (s.type === 'sort') return sortRight(s, state.a[s.id]);
+    return (s.questions || []).every(function (q) { return isRight(q, state.a[q.id]); });
+  }
+  function attachAnalyser() {
+    if (!P.el || P.srcAttached) return;
+    try {
+      var src = audio.getAttribute('data-src') || '';
+      // Hanya file dari alamat yang sama (paket SCORM / blob Builder). File dari domain lain bisa jadi bisu bila dianalisis.
+      var sameOrigin = /^blob:/.test(src) || !/^[a-z]+:/i.test(src) || src.indexOf(location.origin) === 0;
+      if (!sameOrigin) return;
+      // Sambungkan hanya bila AudioContext sudah berjalan — bila tidak, suara narasi bisa jadi bisu.
+      if (!P.ctx || P.ctx.state !== 'running') return;
+      var node = P.ctx.createMediaElementSource(audio);
+      P.an = P.ctx.createAnalyser(); P.an.fftSize = 1024; P.buf = new Uint8Array(P.an.fftSize);
+      node.connect(P.an); P.an.connect(P.ctx.destination);
+      P.srcAttached = true;
+    } catch (e) { P.an = null; }
+  }
+  /** AudioContext dibuat & dijalankan pada ketukan pertama peserta (aturan autoplay browser). */
+  function unlockAudio() {
+    if (!presenterOn()) return;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      P.ctx = P.ctx || new AC();
+      if (P.ctx.state === 'suspended') P.ctx.resume().then(function () { if (narrationOn && P.mode === 'audio') attachAnalyser(); });
+    } catch (e) { /* abaikan: tetap pakai gerak bibir ritmis */ }
+  }
+  document.addEventListener('pointerdown', unlockAudio, true);
+  document.addEventListener('keydown', unlockAudio, true);
+  function talk(mode) {
+    P.mode = mode || false;
+    if (!P.el) return;
+    P.el.setAttribute('data-talk', mode ? '1' : '0');
+    cancelAnimationFrame(P.raf);
+    if (!mode) { P.el.setAttribute('data-m', '0'); return; }
+    if (P.ctx && P.ctx.state === 'suspended') P.ctx.resume();
+    P.t0 = performance.now();
+    var last = -1, hold = 0;
+    (function loop(t) {
+      if (!P.mode || !P.el) return;
+      var lv;
+      if (P.mode === 'audio' && P.an && P.ctx && P.ctx.state === 'running') {
+        P.an.getByteTimeDomainData(P.buf);
+        var sum = 0; for (var i = 0; i < P.buf.length; i++) { var v = (P.buf[i] - 128) / 128; sum += v * v; }
+        lv = Math.sqrt(sum / P.buf.length) * 4.2;
+      } else {
+        // Tanpa akses audio (suara perangkat): gerak bibir ritmis yang meyakinkan.
+        var x = (t - P.t0) / 1000;
+        lv = Math.max(0, Math.sin(x * 11.5) * 0.55 + Math.sin(x * 4.3 + 1) * 0.35 + 0.18);
+      }
+      P.level = P.level * 0.45 + lv * 0.55;
+      var m = P.level > 0.42 ? 2 : P.level > 0.14 ? 1 : 0;
+      if (m !== last && t - hold > 55) { P.el.setAttribute('data-m', String(m)); last = m; hold = t; }
+      P.raf = requestAnimationFrame(loop);
+    })(performance.now());
+  }
 
   // ------------------------------------------------------------ kerangka layar
   function header() {
@@ -279,6 +426,9 @@
       footer();
     bindFrame();
     if (r.bind) r.bind(s, $('#slide'));
+    pose(autoPose(s, state.i));
+    fitText();
+    $$('img', $('#slide')).forEach(function (im) { if (!im.complete) im.addEventListener('load', refit, { once: true }); });
     if (!opts.noFocus) { var sl = $('#slide'); if (sl) sl.focus({ preventScroll: true }); }
     evaluate(); save();
     if (opts.autoplay !== false && C.narration && C.narration.autoplay && canNarrate(s) && !PREVIEW) startNarration();
@@ -293,6 +443,7 @@
     var cc = $('#btnCC'); if (cc) cc.onclick = function () {
       captionsOn = !captionsOn; cc.setAttribute('aria-pressed', String(captionsOn));
       var c = $('#captions'); if (c) c.hidden = !captionsOn;
+      refit();
     };
     var dr = $('#drawer'), sc = $('#scrim'), mb = $('#btnMenu');
     var open = function (o) { dr.hidden = !o; sc.hidden = !o; mb.setAttribute('aria-expanded', String(o)); if (o) { var f = dr.querySelector('button:not([disabled])'); if (f) f.focus(); } };
@@ -677,6 +828,7 @@
       '</div>' +
       (S.connected || PREVIEW ? '' : '<p class="note">Mode mandiri: tidak terhubung ke LMS. Progres disimpan di browser ini saja.</p>') +
       '</div></section>';
+    pose('lambai', 'start');
     if (resume) {
       $('#btnResume').onclick = function () { show(state.i); };
       $('#btnRestart').onclick = function () { show(0); };
@@ -706,6 +858,7 @@
     if (S.connected && !pendingOther.length) html += '<button class="btn" id="btnExit">Tutup kursus</button>';
     html += '</div></div></section>';
     app.innerHTML = html;
+    pose(pendingOther.length ? 'tunjuk' : pass ? 'jempol' : 'pikir', 'start');
     if (pass && !pendingOther.length) celebrate(1);
     $$('[data-go]').forEach(function (b) { b.onclick = function () { show(+b.getAttribute('data-go')); }; });
     $('#btnBack').onclick = function () { show(state.i, { autoplay: false }); };
@@ -716,6 +869,7 @@
 
   function renderCertificate() {
     var p = graded().length ? points() : null;
+    pose('sembunyi');
     var name = S.learnerName() || (function () { try { return localStorage.getItem('studio-scorm:nama') || ''; } catch (e) { return ''; } })();
     var date = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
     app.innerHTML = '<section class="cert-page">' +
@@ -743,6 +897,8 @@
     C = data; slides = C.slides || [];
     C.passingScore = C.passingScore == null ? 80 : +C.passingScore;
     applyTheme();
+    stopNarration();
+    buildPresenter();
     if (!slides.length) { app.innerHTML = '<section class="start"><div class="start-card"><h1>' + esc(C.title || 'Kursus') + '</h1><p class="lead">Belum ada slide.</p></div></section>'; return; }
     if (PREVIEW) {
       state = (opts && opts.keepState && state) ? state : freshState();
