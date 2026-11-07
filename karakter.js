@@ -26,6 +26,10 @@
   LIST.vira = { name: 'Vira', desc: 'Environment — berhijab krem', foto: true };
   LIST.shendi = { name: 'Shendi', desc: 'Trainer — kemeja batik', foto: true };
   LIST.romi = { name: 'Romi', desc: 'Manajer — jas hitam, dasi biru', foto: true };
+  LIST.sasha = { name: 'Sasha', desc: 'Staf — blazer sakura, berkacamata', foto: true };
+  LIST.feri = { name: 'Feri', desc: 'Supervisor — jas bergaris, dasi navy', foto: true };
+  LIST.ela = { name: 'Ela', desc: 'Staf — blus putih, rambut kepang', foto: true };
+  LIST.meena = { name: 'Meena', desc: 'Staf — blazer pink, rambut pirang', foto: true };
   function fotoSvg(id, thumbOnly) {
     var o = ['<div class="kr kr-foto" data-who="' + id + '" aria-hidden="true">'];
     FOTO_POSES.forEach(function (p) { for (var m = 0; m < 3; m++) if (!thumbOnly || (p === 'diam' && m === 0)) o.push('<img src="' + BASE + id + '-' + p + '-' + m + '.webp" alt="" draggable="false" data-p="' + p + '" data-m="' + m + '">'); });

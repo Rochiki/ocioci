@@ -74,7 +74,7 @@ Pilihan lain: **Rekam suara** sendiri di setiap slide, atau **Unggah audio**. Sl
 
 ## 4b. Karakter presenter animasi
 
-Tab **Gaya → Karakter presenter**: nyalakan, lalu pilih karakter bawaan (Raka, Sari, Nisa, Pak Budi, dr. Dewi — gambar vektor buatan sendiri, bebas dipakai; dan enam karakter ilustrasi dengan 6 ekspresi — diam, menunjuk, melambai, jempol, berpikir, serius/tegas: **Safee, Safri, Helen, Vira, Shendi, Romi**; nama disusun dari Safety · Health · Environment) atau **Karakter sendiri** (unggah PNG transparan/GIF; opsional gambar kedua dengan mulut terbuka untuk gerak bibir).
+Tab **Gaya → Karakter presenter**: nyalakan, lalu pilih karakter bawaan (Raka, Sari, Nisa, Pak Budi, dr. Dewi — gambar vektor buatan sendiri, bebas dipakai; dan sepuluh karakter ilustrasi dengan 6 ekspresi — diam, menunjuk, melambai, jempol, berpikir, serius/tegas: **Safee, Safri, Helen, Vira, Shendi, Romi, Sasha, Feri, Ela, Meena**) atau **Karakter sendiri** (unggah PNG transparan/GIF; opsional gambar kedua dengan mulut terbuka untuk gerak bibir).
 
 - Karakter berkedip, bernapas, dan **bibirnya bergerak mengikuti narasi** (paling pas dengan MP3).
 - Pose per slide (bagian **Tampilan** di tiap slide): Otomatis, Menunjuk, Melambai, Jempol, Berpikir, Diam, Sembunyikan. Mode Otomatis: melambai di awal, menunjuk materi, berpikir saat kuis, jempol bila jawaban benar.

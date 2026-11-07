@@ -15,7 +15,7 @@ import { escapeXml, slugify, normalizeZipPath } from './util.js';
 export const TEMPLATE_FILES = ['paket-index.html', 'course.css', 'scorm-api.js', 'course.js', 'karakter.js', 'lipsync.js'];
 export const POSES = ['auto', 'diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'serius', 'sembunyi'];
 /** Karakter ilustrasi (gambar): nama berkas yang ikut masuk paket bila dipilih. */
-export const FOTO_CHARS = ['safee', 'safri', 'helen', 'vira', 'shendi', 'romi'];
+export const FOTO_CHARS = ['safee', 'safri', 'helen', 'vira', 'shendi', 'romi', 'sasha', 'feri', 'ela', 'meena'];
 export const fotoFiles = (id) => ['diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'serius'].flatMap((p) => [0, 1, 2].map((m) => `${id}-${p}-${m}.webp`));
 export const BUTTON_ACTIONS = ['start', 'next', 'prev', 'pause', 'replay', 'goto', 'link', 'info', 'finish'];
 export const TEXT_SIZES = ['auto', 'normal', 'besar', 'sangat'];
