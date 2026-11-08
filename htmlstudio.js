@@ -131,7 +131,7 @@ function panelCode() {
     const issues = analyze(P.src).issues;
     const fixable = issues.some((i) => i.fix);
     const rows = [
-      ...issues.map((i) => h('li', { class: `lint-${i.level}` }, h('span', { class: 'lint-ic', 'aria-hidden': 'true' }, i.level === 'error' ? '✖' : '⚠'), h('span', {}, i.line ? h('b', {}, `Baris ${i.line}: `) : null, i.msg, i.fix ? h('em', {}, ' · bisa diperbaiki otomatis') : null))),
+      ...issues.map((i) => h('li', { class: `lint-${i.level}` }, h('span', { class: 'lint-ic', 'aria-hidden': 'true' }, i.level === 'error' ? '✖' : '⚠'), h('span', {}, ...[i.line ? h('b', {}, `Baris ${i.line}: `) : '', i.msg, i.fix ? h('em', {}, ' · bisa diperbaiki otomatis') : '']))),
       ...runErrors.map((m) => h('li', { class: 'lint-error' }, h('span', { class: 'lint-ic', 'aria-hidden': 'true' }, '✖'), h('span', {}, h('b', {}, 'Error saat dijalankan: '), m))),
     ];
     const total = issues.length + runErrors.length;
@@ -142,10 +142,10 @@ function panelCode() {
           const r = autofix(P.src); if (!r.applied.length) return toast('Tidak ada yang bisa diperbaiki otomatis.', 'info');
           undo = P.src; set(r.src); toast(`Diperbaiki: ${r.applied.join('; ')}.`, 'ok'); lint();
         } }, icon('sparkle'), 'Perbaiki otomatis'),
-        undo != null ? h('button', { class: 'btn btn-sm', type: 'button', onclick: () => { const u = undo; undo = null; set(u); lint(); } }, 'Urungkan') : null),
-      rows.length ? h('ul', { class: 'lint-list' }, rows) : null);
+        ...(undo != null ? [h('button', { class: 'btn btn-sm', type: 'button', onclick: () => { const u = undo; undo = null; set(u); lint(); } }, 'Urungkan')] : [])),
+      ...(rows.length ? [h('ul', { class: 'lint-list' }, rows)] : []));
   };
-  panelCode.lint = () => { clearTimeout(lt); lt = setTimeout(lint, 250); };
+  panelCode.lint = () => { clearTimeout(lt); lt = setTimeout(lint, Math.min(1200, 250 + (P.src || '').length / 500)); };
   ta.addEventListener('input', () => { undo = null; panelCode.lint(); });
   lint();
   return card('1 · Kode HTML', 'html',

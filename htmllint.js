@@ -9,7 +9,14 @@ const RAW = new Set(['script', 'style', 'textarea', 'title']);
 // elemen yang penutupnya boleh dihilangkan menurut standar HTML (tidak dianggap salah)
 const OPTIONAL = new Set('html head body p li dt dd tr td th thead tbody tfoot colgroup option optgroup rt rp caption'.split(' '));
 const SKIP_HEAD = new Set(['html', 'head', 'body']);
-const lineOf = (s, pos) => { let n = 1; for (let i = 0; i < pos && i < s.length; i++) if (s.charCodeAt(i) === 10) n++; return n; };
+let _ls = { s: null, a: [] };
+export const MAX_LINT = 6 * 1024 * 1024;
+const lineOf = (s, pos) => {
+  if (_ls.s !== s) { const a = [0]; for (let i = s.indexOf('\n'); i >= 0; i = s.indexOf('\n', i + 1)) a.push(i + 1); _ls = { s, a }; }
+  const a = _ls.a; let lo = 0, hi = a.length - 1;
+  while (lo < hi) { const m = (lo + hi + 1) >> 1; if (a[m] <= pos) lo = m; else hi = m - 1; }
+  return lo + 1;
+};
 
 const TAG_RE = /<(\/?)([a-zA-Z][a-zA-Z0-9:-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/y;
 
@@ -53,11 +60,11 @@ function jsError(code) {
 const EOF_ERR = /end of input|unterminated|missing \)|expected expression, got end|unexpected end/i;
 function jsErrorLine(code) {
   const lines = code.split('\n');
-  for (let n = 1; n <= lines.length; n++) {
-    const e = jsError(lines.slice(0, n).join('\n'));
-    if (e && !EOF_ERR.test(e.message)) return n;
-  }
-  return null;
+  const bad = (n) => { const e = jsError(lines.slice(0, n).join('\n')); return !!e && !EOF_ERR.test(e.message); };
+  if (!bad(lines.length)) return null;
+  let lo = 1, hi = lines.length;            // cari n terkecil yang sudah error "sungguhan"
+  while (lo < hi) { const m = (lo + hi) >> 1; if (bad(m)) hi = m; else lo = m + 1; }
+  return lo;
 }
 const JS_MSG = (m) => String(m).replace(/^Unexpected token/, 'Karakter tak terduga').replace(/^Unexpected identifier/, 'Nama tak terduga').replace(/^Unexpected end of input/, 'Kode terpotong (ada kurung/kurawal yang belum ditutup)').replace(/^Invalid or unexpected token/, 'Karakter tidak valid (sering: tanda kutip “ ” atau spasi aneh hasil copy-paste)').replace(/^missing \) after argument list/, 'Kurung ")" kurang');
 
@@ -86,6 +93,7 @@ export function analyze(src) {
   const add = (id, level, msg, line, fix = false) => issues.push({ id, level, msg, line: line || null, fix });
   src = String(src || '');
   if (!src.trim()) return { issues };
+  if (src.length > MAX_LINT) { add('toolong', 'info', `Kode sangat besar (${Math.round(src.length / 1024)} KB) — pemeriksaan dilewati agar aplikasi tetap lancar. Pratinjau tetap berjalan.`, 1); return { issues }; }
   if (hasFence(src)) add('fence', 'error', 'Ada pagar markdown ``` di awal/akhir kode (hasil copy dari chat). Ini ikut tampil di halaman.', 1, true);
   if (looksEscaped(src)) add('escaped', 'error', 'Kode tersimpan sebagai teks (<div> tertulis &lt;div&gt;). Perlu dikembalikan ke tag asli.', 1, true);
 
@@ -200,7 +208,12 @@ export function autofix(input) {
     const pos = bodyClose ? bodyClose.pos : htmlClose ? htmlClose.pos : s.length;
     edits.push({ pos, del: 0, ins: c }); fixedTags += left.filter((x) => !OPTIONAL.has(x.name)).length;
   }
-  for (const e of edits.sort((a, b) => b.pos - a.pos)) s = s.slice(0, e.pos) + e.ins + s.slice(e.pos + e.del);
+  if (edits.length) {
+    edits.sort((a, b) => a.pos - b.pos);
+    const out = []; let cur = 0;
+    for (const e of edits) { if (e.pos < cur) continue; out.push(s.slice(cur, e.pos), e.ins); cur = e.pos + e.del; }
+    out.push(s.slice(cur)); s = out.join('');
+  }
   if (fixedTags) note(`Merapikan tag yang tidak berpasangan (${fixedTags})`);
 
   // http → https

@@ -55,3 +55,14 @@ test('autofix tidak merusak HTML sehat dan hasilnya tetap bisa dibangun', () => 
   assert.equal(r.src, ok); assert.deepEqual(r.applied, []);
   assert.match(buildHtml({ ...defaultProject(), src: autofix('```\n<div><b>x\n```').src }), /<div><b>x\n<\/b><\/div>/);
 });
+
+test('kode panjang (±1 MB, rusak) diproses cepat', () => {
+  let body = '', js = '';
+  for (let i = 0; i < 4000; i++) { body += `<div id="c${i}"><h2>J${i}</h2><p>Teks “x” ${i}</p></div>\n`; js += `function f${i}(){ return ${i}; }\n`; }
+  const src = `<html><body><section>${body}<script>${js}let z = (1;</script></body></html>`;
+  const t0 = Date.now();
+  const a = analyze(src); const f = autofix(src);
+  assert.ok(Date.now() - t0 < 3000, `terlalu lambat: ${Date.now() - t0}ms`);
+  assert.ok(a.issues.some((i) => i.id === 'js' && i.line > 4000));
+  assert.ok(f.applied.length);
+});
