@@ -35,6 +35,7 @@
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
     lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>',
     full: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+    music: '<path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
     up: '<path d="M6 15l6-6 6 6"/>',
     down: '<path d="M6 9l6 6 6-6"/>',
     grip: '<circle cx="9" cy="7" r="1.3"/><circle cx="15" cy="7" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="9" cy="17" r="1.3"/><circle cx="15" cy="17" r="1.3"/>',
@@ -250,6 +251,69 @@
   function toggleNarration() { if (narrationOn) stopNarration(); else startNarration(); }
 
 
+
+  // ------------------------------------------------------------ musik latar & efek suara
+  var Snd = { bgm: null, src: '', want: '', vol: 0.35, ducked: false, muted: false, started: false, iv: 0, last: -1, sfx: null };
+  function sndCfg() { return (C && C.sound) || {}; }
+  function sndTarget() { var b = sndCfg().bgm; var d = !b || b.duck !== false; return Snd.muted ? 0 : Snd.vol * (Snd.ducked && d ? 0.28 : 1); }
+  function sndFade(to, done) {
+    clearInterval(Snd.iv);
+    if (!Snd.bgm) { if (done) done(); return; }
+    Snd.iv = setInterval(function () {
+      var v = Snd.bgm.volume, d = to - v;
+      if (Math.abs(d) < 0.02) { Snd.bgm.volume = Math.max(0, Math.min(1, to)); clearInterval(Snd.iv); if (done) done(); }
+      else Snd.bgm.volume = Math.max(0, Math.min(1, v + (d > 0 ? 0.03 : -0.05)));
+    }, 40);
+  }
+  function sndApply() {
+    var src = Snd.want;
+    if (!Snd.started) return;
+    if (!src) { sndFade(0, function () { if (Snd.bgm) Snd.bgm.pause(); }); return; }
+    if (!Snd.bgm) { Snd.bgm = new Audio(); Snd.bgm.loop = true; Snd.bgm.volume = 0; }
+    var go = function () {
+      Snd.src = src; Snd.bgm.src = src;
+      var p = Snd.bgm.play(); if (p && p.catch) p.catch(function () {});
+      sndFade(sndTarget());
+    };
+    if (Snd.src === src) { if (Snd.bgm.paused) { var p = Snd.bgm.play(); if (p && p.catch) p.catch(function () {}); } sndFade(sndTarget()); }
+    else if (Snd.src) sndFade(0, go);
+    else go();
+  }
+  function sndWant(src) { Snd.want = src || ''; sndApply(); }
+  function slideBgm(s) { if (s && s.bgm === 'off') return ''; if (s && s.bgm) return s.bgm; var b = sndCfg().bgm; return (b && b.src) || ''; }
+  function sndDuck(on) { Snd.ducked = !!on; if (Snd.started && Snd.bgm && Snd.src) sndFade(sndTarget()); }
+  function sfxPlay(kind) {
+    var id = sndCfg().sfx && sndCfg().sfx[kind];
+    if (!id || Snd.muted || !window.StudioSfx) return;
+    Snd.sfx = Snd.sfx || window.StudioSfx.player();
+    Snd.sfx.play(id, 0.8);
+  }
+  function sndStart() {
+    if (Snd.started) return;
+    Snd.started = true;
+    var b = sndCfg().bgm; Snd.vol = b && b.vol != null ? +b.vol : 0.35;
+    if (window.StudioSfx) { Snd.sfx = Snd.sfx || window.StudioSfx.player(); Snd.sfx.unlock(); }
+    sndApply();
+  }
+  function hasMusic() { return !!(sndCfg().bgm && sndCfg().bgm.src); }
+  function musicBtn() {
+    return hasMusic() ? '<button class="icon-btn' + (Snd.muted ? ' off' : '') + '" id="btnMusic" aria-label="' + (Snd.muted ? 'Nyalakan musik' : 'Matikan musik') + '" aria-pressed="' + Snd.muted + '">' + icon('music') + '</button>' : '';
+  }
+  function bindMusic() {
+    var b = $('#btnMusic'); if (!b) return;
+    b.onclick = function () {
+      Snd.muted = !Snd.muted; b.classList.toggle('off', Snd.muted); b.setAttribute('aria-pressed', String(Snd.muted));
+      b.setAttribute('aria-label', Snd.muted ? 'Nyalakan musik' : 'Matikan musik');
+      if (Snd.muted) sndFade(0, function () { if (Snd.bgm) Snd.bgm.pause(); }); else { sndStart(); Snd.started = true; sndApply(); }
+    };
+  }
+  document.addEventListener('pointerdown', sndStart, true);
+  document.addEventListener('keydown', sndStart, true);
+  document.addEventListener('click', function (e) {
+    if (!sndCfg().sfx || !sndCfg().sfx.click || !e.target.closest) return;
+    if (e.target.closest('button, a, [data-go], label, summary, .opt')) sfxPlay('click');
+  }, true);
+
   // ------------------------------------------------------------ tombol aksi di dalam slide
   var ACT_DEF = {
     start: ['Mulai', 'next', 1], next: ['Lanjut', 'next', 1], prev: ['Kembali', 'prev', 0], pause: ['Jeda narasi', 'sound', 0],
@@ -447,6 +511,7 @@
   document.addEventListener('keydown', unlockAudio, true);
   function talk(mode) {
     P.mode = mode || false;
+    sndDuck(!!mode);
     if (!P.el) return;
     P.el.setAttribute('data-talk', mode ? '1' : '0');
     cancelAnimationFrame(P.raf);
@@ -496,6 +561,7 @@
       '<button class="icon-btn" id="btnMenu" aria-label="Daftar isi" aria-expanded="false">' + icon('menu') + '</button>' +
       (C.logo ? '<img class="logo" src="' + esc(C.logo) + '" alt="">' : '') +
       '<div class="bar-title"><span class="course">' + esc(C.title) + '</span><span class="count">Bagian ' + (state.i + 1) + ' dari ' + slides.length + '</span></div>' +
+      musicBtn() +
       (canNarrate(s) ? '<button class="icon-btn" id="btnVoice" aria-label="Putar narasi">' + icon('sound') + '</button>' : '') +
       (canNarrate(s) ? '<button class="icon-btn" id="btnCC" aria-label="Teks narasi" aria-pressed="' + captionsOn + '">' + icon('cc') + '</button>' : '') +
       '<div class="track" role="progressbar" aria-label="Kemajuan" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><div style="width:' + pct + '%"></div></div>' +
@@ -557,6 +623,10 @@
     buildPresenter(s);
     pose(autoPose(s, state.i));
     bindActions(s);
+    bindMusic();
+    sndWant(slideBgm(s));
+    if (Snd.last > -1 && Snd.last !== state.i) sfxPlay('next');
+    Snd.last = state.i;
     fitText();
     $$('img', $('#slide')).forEach(function (im) { if (!im.complete) im.addEventListener('load', refit, { once: true }); });
     if (!opts.noFocus) { var sl = $('#slide'); if (sl) sl.focus({ preventScroll: true }); }
@@ -823,6 +893,7 @@
             isCorrect: isRight(q, state.a[q.id]),
           });
         });
+        sfxPlay(s.questions.every(function (q) { return isRight(q, state.a[q.id]); }) ? 'right' : 'wrong');
         afterGradedSubmit();
       };
       bindRetry(root);
@@ -892,6 +963,7 @@
           id: s.id + '_urut', description: s.title, type: 'sequencing',
           response: order.map(letter), correct: s.items.map(function (_, k) { return letter(k); }), isCorrect: sortRight(s, order),
         });
+        sfxPlay(sortRight(s, order) ? 'right' : 'wrong');
         afterGradedSubmit();
       };
     },
@@ -945,6 +1017,7 @@
   // ------------------------------------------------------------ layar awal, akhir, sertifikat
   function renderStart() {
     document.body.classList.remove('full-page');
+    sndWant(slideBgm(null));
     var resume = S.isResume() && (state.i > 0 || state.v.length > 1);
     var gradedCount = graded().length;
     app.innerHTML =
@@ -974,10 +1047,12 @@
   function renderEnd() {
     document.body.classList.remove('full-page');
     stopNarration(); evaluate(); save();
+    sndWant(slideBgm(null));
     var p = graded().length ? points() : null;
     var pendingGraded = graded().filter(function (g) { return !state.d[g.id]; });
     var pendingOther = slides.filter(function (s) { return !isDone(s); });
     var pass = p ? allGradedDone() && p.percent >= C.passingScore : !pendingOther.length;
+    if (pass && !pendingOther.length) sfxPlay('finish');
     var html = '<section class="start end"><div class="start-card">';
     if (pendingOther.length) {
       html += '<h1>Hampir selesai</h1><p class="lead">Masih ada ' + pendingOther.length + ' bagian yang belum tuntas:</p><ul class="todo">' +

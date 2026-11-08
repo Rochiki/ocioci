@@ -12,12 +12,15 @@
 import { buildManifest } from './manifest.js';
 import { escapeXml, slugify, normalizeZipPath } from './util.js';
 
-export const TEMPLATE_FILES = ['paket-index.html', 'course.css', 'scorm-api.js', 'course.js', 'karakter.js', 'lipsync.js'];
+export const TEMPLATE_FILES = ['paket-index.html', 'course.css', 'scorm-api.js', 'course.js', 'karakter.js', 'lipsync.js', 'sfx.js'];
 export const POSES = ['auto', 'diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'serius', 'sembunyi'];
 /** Karakter ilustrasi (gambar): nama berkas yang ikut masuk paket bila dipilih. */
 export const FOTO_CHARS = ['safee', 'safri', 'helen', 'vira', 'shendi', 'romi', 'sasha', 'feri', 'ela', 'meena'];
 export const fotoFiles = (id) => ['diam', 'tunjuk', 'lambai', 'jempol', 'pikir', 'serius'].flatMap((p) => [0, 1, 2].map((m) => `${id}-${p}-${m}.webp`));
 export const BUTTON_ACTIONS = ['start', 'next', 'prev', 'pause', 'replay', 'goto', 'link', 'info', 'finish'];
+export const SFX_IDS = ['klik', 'pop', 'ding', 'sukses', 'salah', 'whoosh', 'tada', 'notif', 'koin', 'alarm'];
+export const SFX_EVENTS = ['click', 'next', 'right', 'wrong', 'finish'];
+export const LIB_RE = /^bgm-[a-z0-9-]+\.mp3$/;
 export const TEXT_SIZES = ['auto', 'normal', 'besar', 'sangat'];
 export const SLIDE_TYPES = ['content', 'image', 'video', 'html', 'flip', 'hotspot', 'quiz', 'sort'];
 
@@ -106,6 +109,21 @@ const extOf = (name = '', mime = '') => {
   }[(mime || '').split(';')[0]] || 'bin';
 };
 
+/** Musik latar & efek suara kursus → data kursus (atau undefined bila tidak dipakai). */
+export async function cleanSound(snd, a, libPath = (f) => f) {
+  if (!snd) return undefined;
+  const out = {};
+  const b = snd.bgm || {};
+  let src = null;
+  if (b.mode === 'lib' && LIB_RE.test(b.lib || '')) src = libPath(b.lib);
+  else if (b.mode === 'upload' && isAsset(b.asset)) src = await a(b.asset, 'musik-latar');
+  if (src) out.bgm = { src, vol: Math.min(1, Math.max(0, Number(b.vol ?? 0.35))), duck: b.duck !== false };
+  const sfx = {};
+  for (const k of SFX_EVENTS) if (SFX_IDS.includes(snd.sfx?.[k])) sfx[k] = snd.sfx[k];
+  if (Object.keys(sfx).length) out.sfx = sfx;
+  return Object.keys(out).length ? out : undefined;
+}
+
 /** Bersihkan tombol aksi slide: hanya aksi dikenal, tautan http(s)/mailto/tel, tujuan lompat harus ada. */
 export function cleanButtons(list, slides = []) {
   const idOf = (x) => String(x.id).replace(/[^A-Za-z0-9_-]/g, '_');
@@ -135,7 +153,7 @@ export function cleanButtons(list, slides = []) {
  * @param {(asset:object, hint:string)=>string|Promise<string>} putAsset  mengembalikan URL/path untuk sebuah media
  * @param {(slide:object, index:number)=>Promise<object>} putHtml  mengembalikan {src}|{srcdoc}|{placeholder} untuk slide HTML
  */
-export async function toCourseData(project, putAsset, putHtml) {
+export async function toCourseData(project, putAsset, putHtml, libPath = (f) => f) {
   const hasGraded = project.slides.some((s) => (s.type === 'quiz' && s.questions?.length) || (s.type === 'sort' && filled(s.items).length > 1));
   const a = async (v, hint) => (isAsset(v) ? putAsset(v, hint) : null);
   const slides = [];
@@ -148,6 +166,8 @@ export async function toCourseData(project, putAsset, putHtml) {
     if (s.who === 'none' || (typeof s.who === 'string' && /^[a-z]{3,12}$/.test(s.who) && s.who !== 'sendiri')) base.who = s.who;
     const btns = cleanButtons(s.buttons, project.slides);
     if (btns.length) base.buttons = btns;
+    if (s.bgm === 'off') base.bgm = 'off';
+    else if (LIB_RE.test(s.bgm || '')) base.bgm = libPath(s.bgm);
     base.audio = await a(s.audio, `narasi-${n}`);
     if (base.audio && typeof s.lip === 'string' && /^[012]+$/.test(s.lip) && s.lip.length < 20000) base.lip = s.lip;
     let o;
@@ -211,6 +231,7 @@ export async function toCourseData(project, putAsset, putHtml) {
     },
     textSize: TEXT_SIZES.includes(project.textSize) ? project.textSize : 'auto',
     presenter,
+    sound: await cleanSound(project.sound, a, libPath),
     slides,
     builtWith: 'Studio SCORM',
     builtAt: new Date().toISOString(),
@@ -242,6 +263,7 @@ export async function buildPackage(project, { template, JSZip = globalThis.JSZip
   const zip = new JSZip();
   let mediaCount = 0;
   const used = new Set();
+  const usedLib = new Set();
 
   const putAsset = (asset, hint) => {
     const ext = extOf(asset.name, asset.type || asset.data?.type);
@@ -272,7 +294,7 @@ export async function buildPackage(project, { template, JSZip = globalThis.JSZip
   };
 
   onProgress('Menyusun isi kursus…');
-  const data = await toCourseData(project, putAsset, putHtml);
+  const data = await toCourseData(project, putAsset, putHtml, (f) => { usedLib.add(f); return `assets/${f}`; });
   zip.file('assets/course-data.js', `/* Dibuat oleh Studio SCORM — isi kursus */\nwindow.COURSE_DATA = ${JSON.stringify(data, null, 1)};\n`);
   zip.file('index.html', template['paket-index.html'].replace(/<title>[^<]*<\/title>/, `<title>${escapeXml(data.title)}</title>`));
   zip.file('assets/course.css', template['course.css']);
@@ -280,6 +302,7 @@ export async function buildPackage(project, { template, JSZip = globalThis.JSZip
   zip.file('assets/course.js', template['course.js']);
   zip.file('assets/karakter.js', template['karakter.js']);
   zip.file('assets/lipsync.js', template['lipsync.js']);
+  zip.file('assets/sfx.js', template['sfx.js']);
   const usedChars = new Set();
   if (data.presenter?.on && FOTO_CHARS.includes(data.presenter.who)) usedChars.add(data.presenter.who);
   for (const sl of data.slides) if (FOTO_CHARS.includes(sl.who)) usedChars.add(sl.who);
@@ -289,6 +312,11 @@ export async function buildPackage(project, { template, JSZip = globalThis.JSZip
     for (const id of usedChars) for (const f of fotoFiles(id)) zip.file(`assets/${f}`, await template.__bin(f));
   }
 
+  if (usedLib.size) {
+    if (typeof template.__bin !== 'function') throw new Error('Musik pustaka tidak tersedia untuk paket ini.');
+    onProgress('Menyalin musik latar…');
+    for (const f of usedLib) zip.file(`assets/${f}`, await template.__bin(f), { compression: 'STORE' });
+  }
   const files = Object.keys(zip.files).filter((f) => !zip.files[f].dir);
   const identifier = `${slugify(data.title)}-${String(project.id || '').replace(/[^A-Za-z0-9]/g, '').slice(-6) || 'kursus'}`;
   zip.file('imsmanifest.xml', buildManifest({ version: data.version, identifier, title: data.title, files, passingScore: data.passingScore }));

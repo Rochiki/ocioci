@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f3d2e">
+  <title>HTML Creator — Studio SCORM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="htmlstudio.css">
+  <script type="module" src="htmlstudio.js"></script>
+</head>
+<body class="is-html">
+  <header class="topbar">
+    <a class="brand" href="index.html" aria-label="Studio SCORM — beranda"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span class="brand-name">Studio SCORM</span></a>
+    <nav class="topnav" aria-label="Menu utama">
+      <a href="builder.html">Builder</a>
+      <a href="player.html">Player</a>
+      <a href="html-builder.html" aria-current="page">HTML Creator</a>
+    </nav>
+    <span class="spacer"></span>
+    <small id="saveState" class="save-state" aria-live="polite"></small>
+    <button id="btnOpen" class="btn btn-ghost-light" type="button"><span class="ic-slot" data-icon="folder"></span><span class="hide-sm">Buka proyek</span></button>
+    <button id="btnSave" class="btn btn-ghost-light" type="button"><span class="ic-slot" data-icon="file"></span><span class="hide-sm">Simpan proyek</span></button>
+    <button id="btnExport" class="btn btn-signal" type="button"><span class="ic-slot" data-icon="download"></span><span>Unduh .html</span></button>
+    <input id="fileProject" type="file" accept=".json,application/json" hidden>
+  </header>
+  <div class="hc" id="hc" data-view="edit">
+    <main class="hc-edit" id="panels" aria-label="Pengaturan"></main>
+    <aside class="hc-view" aria-label="Pratinjau">
+      <div class="hc-tools">
+        <div class="segmented" role="radiogroup" aria-label="Ukuran pratinjau">
+          <label><input type="radio" name="dev" value="hp"><span><span class="ic-slot" data-icon="phone"></span>HP</span></label>
+          <label><input type="radio" name="dev" value="full" checked><span><span class="ic-slot" data-icon="laptop"></span>Lebar</span></label>
+        </div>
+        <button id="btnReload" class="btn btn-sm" type="button"><span class="ic-slot" data-icon="retry"></span>Muat ulang</button>
+        <span id="sizeInfo" class="muted small"></span>
+      </div>
+      <div class="hc-frame" id="frameWrap"><iframe id="pv" title="Pratinjau halaman" allow="autoplay; fullscreen" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"></iframe></div>
+      <p class="hint center">Ketuk di dalam pratinjau sekali agar suara bisa diputar (aturan browser).</p>
+    </aside>
+  </div>
+  <nav class="hc-tabs" aria-label="Tampilan">
+    <button type="button" data-v="edit" aria-pressed="true">Atur</button>
+    <button type="button" data-v="lihat" aria-pressed="false">Lihat</button>
+  </nav>
+</body>
+</html>

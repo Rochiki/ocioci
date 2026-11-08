@@ -166,3 +166,27 @@ test('karakter per slide: frame semua karakter yang dipakai ikut paket, tombol d
   assert.equal(d.slides[0].buttons[2].url, 'https://contoh.id');
   assert.equal(d.presenter.on, false);
 });
+
+test('musik latar & efek suara: lagu pustaka disalin ke paket, tercatat di manifest, slide bisa hening', async () => {
+  const p = sample();
+  p.sound = { bgm: { mode: 'lib', lib: 'bgm-be-chillin.mp3', vol: 0.4, duck: true }, sfx: { click: 'klik', right: 'sukses', wrong: 'bukan-ada', finish: 'tada' } };
+  p.slides[1].bgm = 'off'; p.slides[2].bgm = 'bgm-be-chillin.mp3'; p.slides[3].bgm = '../../etc/passwd';
+  const { data } = await buildPackage(p, { template, JSZip, type: 'nodebuffer' });
+  const zip = await JSZip.loadAsync(data);
+  const d = await readData(zip);
+  assert.equal(d.sound.bgm.src, 'assets/bgm-be-chillin.mp3');
+  assert.equal(d.sound.bgm.vol, 0.4);
+  assert.deepEqual(d.sound.sfx, { click: 'klik', right: 'sukses', finish: 'tada' }); // id tak dikenal dibuang
+  assert.ok(zip.file('assets/bgm-be-chillin.mp3') && zip.file('assets/sfx.js'));
+  assert.ok((await zip.file('imsmanifest.xml').async('string')).includes('assets/bgm-be-chillin.mp3'));
+  assert.equal(d.slides[1].bgm, 'off');
+  assert.equal(d.slides[2].bgm, 'assets/bgm-be-chillin.mp3');
+  assert.equal(d.slides[3].bgm, undefined); // nama berbahaya ditolak
+});
+
+test('tanpa pengaturan suara: tidak ada data/berkas musik', async () => {
+  const { data } = await buildPackage(sample(), { template, JSZip, type: 'nodebuffer' });
+  const zip = await JSZip.loadAsync(data);
+  assert.equal((await readData(zip)).sound, undefined);
+  assert.ok(!Object.keys(zip.files).some((f) => /bgm-/.test(f)));
+});

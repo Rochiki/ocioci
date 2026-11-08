@@ -5,6 +5,7 @@
 //   s.voice { v, style, rate, pitch }  — kosong = ikut tab Suara
 //   s.buttons [{action,label,target,url,title,text}]
 // ============================================================
+import { musicPicker } from './musiklib.js';
 import { h as h0, icon } from './ui.js';
 import { field } from './editors.js';
 
@@ -122,6 +123,22 @@ export function buttonsPanel(s, d) {
       h('div', { class: 'chip-row presets' }, BUTTON_PRESETS.map(([a, l, sub]) => h('button', { class: 'pick-chip add', type: 'button', title: sub, onclick: () => add(a) }, icon('plus'), l))),
       rows.length ? h('div', { class: 'btn-list' }, rows) : h('p', { class: 'muted' }, 'Belum ada tombol. Ketuk salah satu di atas untuk menambah.'));
     if (s.buttons && !s.buttons.length) delete s.buttons;
+  };
+  draw();
+  return box;
+}
+
+/** Musik latar per slide: ikut kursus / hening / lagu pustaka tertentu. s.bgm = undefined | 'off' | 'bgm-xxx.mp3' */
+export function slideMusicPanel(s, d) {
+  const box = h('section', { class: 'editor-card' });
+  const draw = () => {
+    const mode = !s.bgm ? 'ikut' : s.bgm === 'off' ? 'off' : 'lib';
+    const set = (v) => { if (v === 'ikut') delete s.bgm; else if (v === 'off') s.bgm = 'off'; else s.bgm = s.bgm && s.bgm !== 'off' ? s.bgm : ''; d.ctx.changed(); draw(); };
+    const seg = h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Musik latar slide' }, [['ikut', 'Ikut kursus'], ['off', 'Hening'], ['lib', 'Lagu lain']].map(([v, l]) =>
+      h('label', {}, h('input', { type: 'radio', name: `sbgm-${s.id}`, value: v, checked: mode === v, onchange: () => set(v) }), h('span', {}, l))));
+    box.replaceChildren(h('h3', {}, 'Musik latar slide ini'), seg,
+      mode === 'lib' ? musicPicker({ value: s.bgm, onPick: (f) => { s.bgm = f; d.ctx.changed(); } }) : null,
+      h('p', { class: 'hint' }, 'Pilih "Hening" untuk slide yang butuh fokus (mis. kuis), atau lagu lain untuk bagian tertentu. Berganti lagu dengan transisi halus.'));
   };
   draw();
   return box;

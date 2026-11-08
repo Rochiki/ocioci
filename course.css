@@ -370,3 +370,5 @@ body.full-page #app { height: 100vh; height: 100dvh; min-height: 0; }
 .act-card h3 { margin: 0 34px 10px 0; }
 .act-card .act-x { position: absolute; top: 10px; right: 10px; }
 .act-card .act-ok { margin-top: 14px; }
+.icon-btn.off { opacity: .6; position: relative; }
+.icon-btn.off::after { content: ""; position: absolute; width: 24px; height: 2px; background: currentColor; transform: rotate(-45deg); border-radius: 2px; }

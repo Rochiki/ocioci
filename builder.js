@@ -9,7 +9,8 @@ import { loadTemplate, buildPackage, validateProject, toCourseData, wrapHtml, pr
 import { importFiles, ACCEPT_ALL, isGenericName } from './importers.js';
 import { BrowserTTS, Recorder, EdgeTTS, PiperTTS, EdgeDirectTTS, PIPER_VOICES, cleanForSpeech, normalizeServerUrl } from './tts.js';
 import { openCropper } from './crop.js';
-import { personaPanel, buttonsPanel } from './slidetools.js';
+import { personaPanel, buttonsPanel, slideMusicPanel } from './slidetools.js';
+import { soundSection, migrateSound, defaultSound } from './soundpanel.js';
 
 const KEY = 'proyek-v2';
 const TTS_KEY = 'studio-scorm:tts-v2';
@@ -39,7 +40,7 @@ function blankProject() {
     theme: { preset: 'k3', ...THEMES.k3, font: 'modern', transition: 'geser' }, logo: null, cover: null,
     narration: { browser: true, autoplay: false, voiceName: '', rate: 1 },
     textSize: 'auto',
-    presenter: defaultPresenter(),
+    presenter: defaultPresenter(), sound: defaultSound(),
     slides: [first],
   };
 }
@@ -53,6 +54,7 @@ function migrate(p) {
   p.certificate ??= true;
   p.textSize ||= 'auto';
   p.presenter = { ...defaultPresenter(), ...(p.presenter || {}) };
+  migrateSound(p);
   if (p.presenter.who === 'laras') p.presenter.who = 'shendi'; // nama lama
   p.narration ||= { browser: p.settings?.browserNarration !== false, autoplay: !!p.settings?.autoplay, voiceName: '', rate: 1 };
   for (const s of p.slides || []) {
@@ -177,7 +179,7 @@ function renderEditor() {
     h('button', { class: 'icon-btn', type: 'button', title: 'Turunkan', 'aria-label': 'Turunkan slide', disabled: idx === project.slides.length - 1, onclick: () => move(1) }, icon('down')),
     h('button', { class: 'icon-btn', type: 'button', title: 'Duplikat', 'aria-label': 'Duplikat slide', onclick: duplicate }, icon('copy')),
     h('button', { class: 'icon-btn danger', type: 'button', title: 'Hapus', 'aria-label': 'Hapus slide', onclick: removeSlide }, icon('trash')));
-  ed.replaceChildren(h('div', { class: 'editor-card' }, head, ...slideEditor(s, ctx), slideLook(s)), narrationPanel(s), personaPanel(s, personaDeps), buttonsPanel(s, { ctx, project, toast }),
+  ed.replaceChildren(h('div', { class: 'editor-card' }, head, ...slideEditor(s, ctx), slideLook(s)), narrationPanel(s), personaPanel(s, personaDeps), buttonsPanel(s, { ctx, project, toast }), slideMusicPanel(s, { ctx }),
     h('div', { class: 'editor-foot' },
       h('button', { class: 'btn', type: 'button', disabled: idx === 0, onclick: () => select(project.slides[idx - 1].id) }, icon('up'), 'Slide sebelumnya'),
       h('button', { class: 'btn btn-primary', type: 'button', onclick: openAddPicker }, icon('plus'), 'Tambah slide')));
@@ -690,6 +692,8 @@ function renderSuara() {
     h('div', { class: 'callout' }, icon('info'), h('div', {}, h('b', {}, missing ? `${missing} slide belum punya MP3` : 'Semua slide sudah punya audio'),
       h('p', { class: 'hint' }, 'Slide yang punya MP3 terdengar sama persis di semua perangkat peserta. Slide tanpa MP3 dibacakan suara perangkat peserta (sering terdengar seperti robot).'))),
     allBtn, allProg,
+    h('h3', {}, 'Musik latar & efek suara'),
+    soundSection({ ctx, project, toast }),
     h('h3', {}, 'Suara cadangan: suara perangkat'),
     toggle(project.narration, 'browser', ctx, 'Bacakan slide tanpa MP3 dengan suara perangkat peserta', 'Gratis, tanpa server. Kualitas tergantung HP/laptop peserta.'),
     field('Suara perangkat', vSel),

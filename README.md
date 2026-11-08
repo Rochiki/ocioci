@@ -88,6 +88,18 @@ Kamus pelafalan (K3 → "K tiga", APD → "A P D", dll.) ada di `tts.js` → `PR
 
 **Layar penuh untuk gambar / video / HTML:** slide media baru otomatis tampil memenuhi halaman (tanpa judul, keterangan, dan margin; karakter presenter disembunyikan). Matikan per slide lewat saklar "Layar penuh", atau nyalakan untuk semua slide lama lewat Atur → Tampilan media. Nama file bawaan seperti `index.html` atau `video.mp4` tidak dipakai sebagai judul.
 
+## 4c. Musik latar & efek suara
+
+**SCORM Builder** — tab *Suara* → "Musik latar & efek suara":
+- Musik latar kursus: pilih dari **Pustaka (68 lagu bebas pakai)**, atau unggah MP3 sendiri; atur volume; musik otomatis mengecil saat narasi berbunyi.
+- Efek suara untuk tiap kejadian (ketuk tombol, pindah slide, jawaban benar/salah, selesai) — efek sintetis bawaan, tanpa file.
+- Per slide (kartu "Musik latar slide ini"): ikut kursus, hening, atau lagu lain.
+- Peserta bisa mematikan musik lewat tombol musik di bagian atas. Musik baru mulai setelah peserta mengetuk pertama kali (aturan autoplay browser).
+
+**HTML Creator** (`html-builder.html`) — tempel kode HTML mana pun, tambahkan layar sambutan, musik latar, efek suara pada tombol/klik/hover/tampil, dan "bacakan" teks; hasilnya **satu file .html** mandiri.
+
+**Pustaka musik**: `musik.json` + `bgm-*.mp3` (68 lagu, ±82 MB, MP3 64 kbps). Sumber: FreePD.com (domain publik / **CC0 1.0**), lewat arsip GitHub SoundSafari/CC0-1.0-Music. Bebas dipakai untuk keperluan apa pun tanpa atribusi (atribusi tetap dihargai). Untuk menambah lagu: taruh `bgm-nama.mp3` di folder utama dan tambahkan barisnya di `musik.json`.
+
 ## 5. Daftar file
 
 | File | Fungsi |
@@ -108,6 +120,8 @@ Kamus pelafalan (K3 → "K tiga", APD → "A P D", dll.) ada di `tts.js` → `PR
 | `slidetools.js` | Panel Builder per slide: Karakter & suara, dan Tombol aksi (data disimpan di `slide.who`, `slide.voice`, `slide.buttons`) |
 | `lipsync.js` | Gerak bibir: membaca irama suara MP3 + vokal dari teks narasi (a/o = mulut lebar, i/u/e = setengah, m/b/p dan jeda = tertutup). Jalur mulut dihitung di Builder saat pratinjau/ekspor dan disimpan di paket; tanpa jalur, dihitung dari teks + durasi audio. Suara perangkat peserta: mulut mengikuti batas kata |
 | `paket-index.html`, `course.js`, `course.css`, `scorm-api.js`, `karakter.js`, `lipsync.js` | **Template** yang disalin ke setiap paket SCORM (`paket-index.html` menjadi `index.html` di dalam zip) |
+| `html-builder.html`, `htmlstudio.js`, `htmlstudio.css`, `htmlinject.js` | **HTML Creator**: menyuntikkan musik/efek/aturan ke HTML tunggal |
+| `sfx.js`, `soundpanel.js`, `musiklib.js`, `musik.json`, `bgm-*.mp3` | Efek suara sintetis, panel suara Builder, pemilih musik, pustaka 68 lagu CC0 |
 | `store.js`, `util.js` | Penyimpanan IndexedDB & fungsi bantu |
 | `jszip.min.js` | JSZip 3.10 (MIT/GPLv3) |
 | `pdf.min.mjs`, `pdf.worker.min.mjs` | PDF.js 5 (Apache-2.0) untuk impor PDF |
