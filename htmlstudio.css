@@ -29,3 +29,11 @@
   .hc-tabs button { flex: 1; min-height: 44px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface-2); font: inherit; font-weight: 700; color: var(--ink); }
   .hc-tabs button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 }
+
+.lint-box { margin-top: 10px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+.lint-good { color: #0a7a3d; } .lint-bad { color: #b42318; }
+.lint-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; font-size: 13px; max-height: 220px; overflow: auto; }
+.lint-list li { display: flex; gap: 8px; line-height: 1.4; }
+.lint-ic { flex: none; font-weight: 800; }
+.lint-error .lint-ic { color: #b42318; } .lint-warn .lint-ic { color: #b7791f; }
+.lint-list em { color: var(--muted); font-style: normal; }

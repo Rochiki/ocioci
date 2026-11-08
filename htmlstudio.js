@@ -4,6 +4,7 @@
 // ============================================================
 import { h, icon, toast, formatBytes } from './ui.js';
 import { buildHtml, defaultProject, SFX_LIST, TARGETS, EVENTS } from './htmlinject.js';
+import { analyze, autofix } from './htmllint.js';
 import { musicPicker, loadCatalog, titleOf } from './musiklib.js';
 import { kv } from './store.js';
 
@@ -70,6 +71,7 @@ const normalize = (o) => {
 function refresh() {
   const html = buildHtml(P, { preview: true, libBase: BASE });
   const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  runErrors.length = 0; panelCode.lint?.();
   const old = pvUrl; pvUrl = url; $('pv').src = url;
   if (old) setTimeout(() => URL.revokeObjectURL(old), 4000);
   const bytes = new Blob([html]).size + (P.bgm.mode === 'lib' && catalog ? (catalog.lagu.find((l) => l.file === P.bgm.lib)?.kb || 0) * 1365 : 0);
@@ -83,6 +85,11 @@ document.querySelectorAll('.hc-tabs button').forEach((b) => b.addEventListener('
   if (b.dataset.v === 'lihat') refresh();
 }));
 
+const runErrors = [];
+window.addEventListener('message', (e) => {
+  if (e.source !== $('pv').contentWindow || e.data?.type !== 'sh-error') return;
+  if (!runErrors.includes(e.data.msg) && runErrors.length < 8) { runErrors.push(e.data.msg); panelCode.lint?.(); }
+});
 let pickCb = null;
 window.addEventListener('message', (e) => {
   if (e.source !== $('pv').contentWindow || e.data?.type !== 'sh-picked') return;
@@ -116,10 +123,33 @@ function panelCode() {
   const ta = h('textarea', { class: 'code', rows: 14, spellcheck: false, placeholder: 'Tempel kode HTML di sini — halaman lengkap (<html>…) atau potongan saja.', oninput: () => { P.src = ta.value; changed(); } });
   ta.value = P.src;
   const file = h('input', { type: 'file', accept: '.html,.htm,text/html', hidden: true, onchange: async () => { if (file.files[0]) { await loadHtmlFile(file.files[0]); file.value = ''; } } });
-  const set = (v) => { P.src = v; ta.value = v; changed({ now: true }); };
+  const set = (v) => { P.src = v; ta.value = v; changed({ now: true }); panelCode.lint?.(); };
   panelCode.set = set;
+  let undo = null, lt = 0;
+  const box = h('div', { class: 'lint-box' });
+  const lint = () => {
+    const issues = analyze(P.src).issues;
+    const fixable = issues.some((i) => i.fix);
+    const rows = [
+      ...issues.map((i) => h('li', { class: `lint-${i.level}` }, h('span', { class: 'lint-ic', 'aria-hidden': 'true' }, i.level === 'error' ? '✖' : '⚠'), h('span', {}, i.line ? h('b', {}, `Baris ${i.line}: `) : null, i.msg, i.fix ? h('em', {}, ' · bisa diperbaiki otomatis') : null))),
+      ...runErrors.map((m) => h('li', { class: 'lint-error' }, h('span', { class: 'lint-ic', 'aria-hidden': 'true' }, '✖'), h('span', {}, h('b', {}, 'Error saat dijalankan: '), m))),
+    ];
+    const total = issues.length + runErrors.length;
+    box.replaceChildren(
+      h('div', { class: 'row gap wrap' },
+        h('b', { class: total ? 'lint-bad' : 'lint-good' }, P.src.trim() ? (total ? `${total} masalah ditemukan` : '✓ Kode terlihat baik') : 'Pemeriksa kode'),
+        h('button', { class: 'btn btn-sm btn-primary', type: 'button', disabled: !fixable, onclick: () => {
+          const r = autofix(P.src); if (!r.applied.length) return toast('Tidak ada yang bisa diperbaiki otomatis.', 'info');
+          undo = P.src; set(r.src); toast(`Diperbaiki: ${r.applied.join('; ')}.`, 'ok'); lint();
+        } }, icon('sparkle'), 'Perbaiki otomatis'),
+        undo != null ? h('button', { class: 'btn btn-sm', type: 'button', onclick: () => { const u = undo; undo = null; set(u); lint(); } }, 'Urungkan') : null),
+      rows.length ? h('ul', { class: 'lint-list' }, rows) : null);
+  };
+  panelCode.lint = () => { clearTimeout(lt); lt = setTimeout(lint, 250); };
+  ta.addEventListener('input', () => { undo = null; panelCode.lint(); });
+  lint();
   return card('1 · Kode HTML', 'html',
-    ta,
+    ta, box,
     h('div', { class: 'row gap', style: { marginTop: '10px' } },
       h('button', { class: 'btn btn-primary btn-sm', type: 'button', onclick: () => file.click() }, icon('upload'), 'Unggah file .html'),
       h('button', { class: 'btn btn-sm', type: 'button', onclick: () => set(SAMPLE) }, icon('sparkle'), 'Isi dengan contoh'),

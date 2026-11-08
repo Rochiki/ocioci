@@ -321,6 +321,12 @@ export function buildHtml(p, { preview = false, libBase = '', libData = null } =
   if (he) html = insertAt(html, he.index, `${injectHead}\n`);
   else { const ho = findTag(html, /<head[^>]*>/i); html = ho ? insertAt(html, ho.index + ho.len, `\n${injectHead}`) : html.replace(/<html[^>]*>/i, (m) => `${m}\n<head>${injectHead}</head>`); }
 
+  if (preview) {
+    const rep = `<script id="sh-errrep">(function(){function s(m){try{parent.postMessage({type:'sh-error',msg:String(m).slice(0,300)},'*')}catch(e){}}addEventListener('error',function(e){if(e.target&&e.target!==window&&(e.target.src||e.target.href)){s('Gagal memuat file: '+(e.target.src||e.target.href));return}s(e.message||'Error')},true);addEventListener('unhandledrejection',function(e){s('Promise ditolak: '+(e.reason&&e.reason.message||e.reason))});})();</script>`;
+    const ho = findTag(html, /<head[^>]*>/i);
+    if (ho) html = insertAt(html, ho.index + ho.len, `\n${rep}`);
+  }
+
   const needRuntime = cfg.bgm.mode !== 'none' || cfg.rules.length || cfg.intro.on || cfg.fs.on || cfg.noRight || cfg.pick;
   let tail = '';
   if (needRuntime) tail += `<script id="sh-runtime">(${studioRuntime.toString()})(${jsonForScript(cfg)},(${studioSfx.toString()})());</script>\n`;

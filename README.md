@@ -98,6 +98,8 @@ Kamus pelafalan (K3 → "K tiga", APD → "A P D", dll.) ada di `tts.js` → `PR
 
 **HTML Creator** (`html-builder.html`) — tempel kode HTML mana pun, tambahkan layar sambutan, musik latar, efek suara pada tombol/klik/hover/tampil, dan "bacakan" teks; hasilnya **satu file .html** mandiri.
 
+**Pemeriksa kode** (`htmllint.js`): di panel *Kode HTML* aplikasi mendeteksi kesalahan umum — pagar markdown ``` hasil copy dari chat, kode tersimpan sebagai teks (`&lt;div&gt;`), tag tidak berpasangan, `<script …/>`, script/style/CSS tak tertutup, tanda kutip lengkung “ ”, kesalahan sintaks JavaScript, alamat `http://`, id ganda, dan file lokal yang tidak ikut — plus error yang muncul saat pratinjau dijalankan. Tombol **Perbaiki otomatis** memperbaiki yang aman (ada **Urungkan**).
+
 **Pustaka musik**: `musik.json` + `bgm-*.mp3` (68 lagu, ±82 MB, MP3 64 kbps). Sumber: FreePD.com (domain publik / **CC0 1.0**), lewat arsip GitHub SoundSafari/CC0-1.0-Music. Bebas dipakai untuk keperluan apa pun tanpa atribusi (atribusi tetap dihargai). Untuk menambah lagu: taruh `bgm-nama.mp3` di folder utama dan tambahkan barisnya di `musik.json`.
 
 ## 5. Daftar file
@@ -121,6 +123,7 @@ Kamus pelafalan (K3 → "K tiga", APD → "A P D", dll.) ada di `tts.js` → `PR
 | `lipsync.js` | Gerak bibir: membaca irama suara MP3 + vokal dari teks narasi (a/o = mulut lebar, i/u/e = setengah, m/b/p dan jeda = tertutup). Jalur mulut dihitung di Builder saat pratinjau/ekspor dan disimpan di paket; tanpa jalur, dihitung dari teks + durasi audio. Suara perangkat peserta: mulut mengikuti batas kata |
 | `paket-index.html`, `course.js`, `course.css`, `scorm-api.js`, `karakter.js`, `lipsync.js` | **Template** yang disalin ke setiap paket SCORM (`paket-index.html` menjadi `index.html` di dalam zip) |
 | `html-builder.html`, `htmlstudio.js`, `htmlstudio.css`, `htmlinject.js` | **HTML Creator**: menyuntikkan musik/efek/aturan ke HTML tunggal |
+| `htmllint.js` | Pemeriksa & perbaik otomatis kode HTML (HTML Creator) |
 | `sfx.js`, `soundpanel.js`, `musiklib.js`, `musik.json`, `bgm-*.mp3` | Efek suara sintetis, panel suara Builder, pemilih musik, pustaka 68 lagu CC0 |
 | `store.js`, `util.js` | Penyimpanan IndexedDB & fungsi bantu |
 | `jszip.min.js` | JSZip 3.10 (MIT/GPLv3) |
