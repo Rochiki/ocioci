@@ -261,14 +261,39 @@ export function runtimeConfig(p, { preview = false, libBase = '' } = {}) {
 const clamp = (n, a, b) => Math.min(b, Math.max(a, Number(n)));
 
 /** Hasilkan HTML akhir. Opsi libInline: {url → dataURL} untuk menanam musik pustaka. */
+/** Cari tag di luar <script>, <style> dan komentar (agar teks "</head>" di dalam JS tidak salah dikira). */
+function findTag(html, re, last = false) {
+  const skip = /<!--[\s\S]*?(?:-->|$)|<script\b[\s\S]*?(?:<\/script\s*>|$)|<style\b[\s\S]*?(?:<\/style\s*>|$)|<textarea\b[\s\S]*?(?:<\/textarea\s*>|$)/gi;
+  const spans = []; let m;
+  while ((m = skip.exec(html))) spans.push([m.index, m.index + m[0].length]);
+  const g = new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g');
+  let found = null;
+  while ((m = g.exec(html))) {
+    if (spans.some(([a, b]) => m.index >= a && m.index < b && !(m.index === a && /^<(script|style|textarea)/i.test(m[0])))) continue;
+    found = { index: m.index, len: m[0].length };
+    if (!last) break;
+  }
+  return found;
+}
+const insertAt = (html, pos, s) => html.slice(0, pos) + s + html.slice(pos);
+
 export function buildHtml(p, { preview = false, libBase = '', libData = null } = {}) {
   let html = String(p.src || '').trim();
   if (!html) html = '<main style="font-family:system-ui;padding:3rem;text-align:center"><h1>Halaman kosong</h1><p>Tempel kode HTML Anda di editor.</p></main>';
-  if (!/<html[\s>]/i.test(html) && !/<body[\s>]/i.test(html)) {
-    html = `<!doctype html>\n<html lang="id">\n<head>\n<meta charset="utf-8">\n</head>\n<body>\n${html}\n</body>\n</html>`;
-  } else if (!/<!doctype/i.test(html)) html = `<!doctype html>\n${html}`;
-  if (!/<head[\s>]/i.test(html)) html = html.replace(/<html[^>]*>/i, (m) => `${m}\n<head></head>`);
-  if (!/<body[\s>]/i.test(html)) html = html.replace(/<\/head>/i, '</head>\n<body>') + '\n</body>';
+  if (!findTag(html, /<html[\s>]/i)) {
+    const hasBody = !!findTag(html, /<body[\s>]/i);
+    html = hasBody
+      ? `<!doctype html>\n<html lang="id">\n${html}\n</html>`
+      : `<!doctype html>\n<html lang="id">\n<head>\n<meta charset="utf-8">\n</head>\n<body>\n${html}\n</body>\n</html>`;
+  } else if (!/^\s*<!doctype/i.test(html)) html = `<!doctype html>\n${html}`;
+  if (!findTag(html, /<head[\s>]/i)) {
+    const h = findTag(html, /<html[^>]*>/i);
+    html = h ? insertAt(html, h.index + h.len, '\n<head></head>') : html;
+  }
+  if (!findTag(html, /<body[\s>]/i)) {
+    const he = findTag(html, /<\/head>/i);
+    if (he) html = insertAt(html, he.index + he.len, '\n<body>') + '\n</body>';
+  }
 
   const cfg = runtimeConfig(p, { preview, libBase });
   if (libData && cfg.bgm.mode === 'lib' && libData[cfg.bgm.libUrl]) cfg.bgm.libUrl = libData[cfg.bgm.libUrl];
@@ -277,12 +302,12 @@ export function buildHtml(p, { preview = false, libBase = '', libData = null } =
   if (p.viewport !== false && !/<meta[^>]+name=["']?viewport/i.test(html)) headBits.push('<meta name="viewport" content="width=device-width, initial-scale=1">');
   if (!/<meta[^>]+charset/i.test(html)) headBits.unshift('<meta charset="utf-8">');
   if (p.favicon) {
-    html = html.replace(/<link[^>]+rel=["']?(?:shortcut )?icon["']?[^>]*>/gi, '');
+    html = html.replace(/<link[^>]+rel=["']?(?:shortcut )?icon["']?[^>]*>/gi, () => '');
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${esc(p.favicon)}</text></svg>`;
     headBits.push(`<link rel="icon" href="data:image/svg+xml,${encodeURIComponent(svg)}">`);
   }
   if (p.title) {
-    if (/<title[\s>]/i.test(html)) html = html.replace(/<title[^>]*>[\s\S]*?<\/title>/i, `<title>${esc(p.title)}</title>`);
+    if (/<title[\s>]/i.test(html)) html = html.replace(/<title[^>]*>[\s\S]*?<\/title>/i, () => `<title>${esc(p.title)}</title>`);
     else headBits.push(`<title>${esc(p.title)}</title>`);
   }
   const I = cfg.intro;
@@ -292,14 +317,16 @@ export function buildHtml(p, { preview = false, libBase = '', libData = null } =
   headBits.push(`<style id="sh-style">${css}</style>`);
   if (p.css?.trim()) headBits.push(`<style id="sh-custom">\n${p.css}\n</style>`);
   const injectHead = headBits.join('\n');
-  html = /<\/head>/i.test(html) ? html.replace(/<\/head>/i, () => `${injectHead}\n</head>`) : html.replace(/<head[^>]*>/i, (m) => `${m}\n${injectHead}`);
+  const he = findTag(html, /<\/head>/i);
+  if (he) html = insertAt(html, he.index, `${injectHead}\n`);
+  else { const ho = findTag(html, /<head[^>]*>/i); html = ho ? insertAt(html, ho.index + ho.len, `\n${injectHead}`) : html.replace(/<html[^>]*>/i, (m) => `${m}\n<head>${injectHead}</head>`); }
 
   const needRuntime = cfg.bgm.mode !== 'none' || cfg.rules.length || cfg.intro.on || cfg.fs.on || cfg.noRight || cfg.pick;
   let tail = '';
   if (needRuntime) tail += `<script id="sh-runtime">(${studioRuntime.toString()})(${jsonForScript(cfg)},(${studioSfx.toString()})());</script>\n`;
   if (p.js?.trim()) tail += `<script id="sh-custom-js">\n${String(p.js).replace(/<\/script/gi, '<\\/script')}\n</script>\n`;
   tail += '<!-- Dibuat dengan Studio SCORM · HTML Creator -->\n';
-  const i = html.toLowerCase().lastIndexOf('</body>');
-  html = i >= 0 ? html.slice(0, i) + tail + html.slice(i) : html + tail;
+  const be = findTag(html, /<\/body\s*>/i, true);
+  html = be ? insertAt(html, be.index, tail) : html + tail;
   return html;
 }

@@ -65,3 +65,18 @@ test('layar sambutan, noSelect, CSS kustom', () => {
   assert.ok(h.includes('user-select:none') && h.includes('h1{color:red}'));
   assert.ok(h.includes('"title":"A<b>"') === false); // dilolos sebagai <
 });
+
+test('judul berisi $& / $1 tidak dirusak, teks "</head>" di dalam script tidak jadi titik sisip', () => {
+  const src = '<html><body><button>ok</button><script>var t=`<head></head>`; var p="$&"; window.__t=t;</script></body></html>';
+  const h = buildHtml(base({ src, title: 'Harga $& $1 $` Rp', bgm: { mode: 'ambient', vol: 0.4, fade: 2 } }));
+  assert.ok(h.includes('<title>Harga $&amp; $1 $` Rp</title>'));
+  assert.ok(h.includes('var t=`<head></head>`;'));
+  assert.ok(h.indexOf('id="sh-style"') < h.indexOf('<body'));
+});
+
+test('HTML tanpa tag <html> tetap mendapat head (judul, gaya) dan runtime di dalam body', () => {
+  const h = buildHtml(base({ src: '<body onload="x=1"><h1>İİİ</h1></body>', title: 'T', bgm: { mode: 'ambient', vol: 0.4, fade: 2 } }));
+  assert.match(h, /<head>[\s\S]*<title>T<\/title>[\s\S]*<\/head>/);
+  assert.ok(h.indexOf('id="sh-runtime"') < h.lastIndexOf('</body>'));
+  assert.ok(h.indexOf('id="sh-runtime"') > h.indexOf('<h1>'));
+});
