@@ -72,6 +72,8 @@ Pilihan lain: **Rekam suara** sendiri di setiap slide, atau **Unggah audio**. Sl
 
 > **Catatan jujur:** jalur Microsoft (langsung maupun lewat `edge-tts`) memakai layanan suara Microsoft Edge yang **tidak resmi** — gratis dan bagus, tetapi tanpa jaminan. Audio disimpan sebagai MP3 di dalam paket, jadi kursus yang sudah jadi tetap bersuara walau layanan berubah.
 
+**Jenis suara (perempuan / laki-laki):** tab *Suara* → "Jenis suara". Microsoft & server: Gadis / Ardi. Suara AI di browser hanya punya satu model Indonesia (perempuan); versi laki-laki dibuat dengan menurunkan nada & warna suara (kurang natural dibanding Ardi). Per slide: pilih "Suara AI · perempuan/laki-laki" di kartu *Karakter & suara slide ini*. Logika di `voicepick.js`.
+
 ## 4b. Karakter presenter animasi
 
 Tab **Gaya → Karakter presenter**: nyalakan, lalu pilih karakter bawaan (Raka, Sari, Nisa, Pak Budi, dr. Dewi — gambar vektor buatan sendiri, bebas dipakai; dan sepuluh karakter ilustrasi dengan 6 ekspresi — diam, menunjuk, melambai, jempol, berpikir, serius/tegas: **Safee, Safri, Helen, Vira, Shendi, Romi, Sasha, Feri, Ela, Meena**) atau **Karakter sendiri** (unggah PNG transparan/GIF; opsional gambar kedua dengan mulut terbuka untuk gerak bibir).
@@ -123,6 +125,7 @@ Kamus pelafalan (K3 → "K tiga", APD → "A P D", dll.) ada di `tts.js` → `PR
 | `lipsync.js` | Gerak bibir: membaca irama suara MP3 + vokal dari teks narasi (a/o = mulut lebar, i/u/e = setengah, m/b/p dan jeda = tertutup). Jalur mulut dihitung di Builder saat pratinjau/ekspor dan disimpan di paket; tanpa jalur, dihitung dari teks + durasi audio. Suara perangkat peserta: mulut mengikuti batas kata |
 | `paket-index.html`, `course.js`, `course.css`, `scorm-api.js`, `karakter.js`, `lipsync.js` | **Template** yang disalin ke setiap paket SCORM (`paket-index.html` menjadi `index.html` di dalam zip) |
 | `html-builder.html`, `htmlstudio.js`, `htmlstudio.css`, `htmlinject.js` | **HTML Creator**: menyuntikkan musik/efek/aturan ke HTML tunggal |
+| `voicepick.js` | Pilihan jenis suara perempuan/laki-laki untuk semua mesin narasi |
 | `htmllint.js` | Pemeriksa & perbaik otomatis kode HTML (HTML Creator) |
 | `sfx.js`, `soundpanel.js`, `musiklib.js`, `musik.json`, `bgm-*.mp3` | Efek suara sintetis, panel suara Builder, pemilih musik, pustaka 68 lagu CC0 |
 | `store.js`, `util.js` | Penyimpanan IndexedDB & fungsi bantu |

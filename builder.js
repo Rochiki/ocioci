@@ -10,6 +10,7 @@ import { importFiles, ACCEPT_ALL, isGenericName } from './importers.js';
 import { BrowserTTS, Recorder, EdgeTTS, PiperTTS, EdgeDirectTTS, PIPER_VOICES, cleanForSpeech, normalizeServerUrl } from './tts.js';
 import { openCropper } from './crop.js';
 import { personaPanel, buttonsPanel, slideMusicPanel } from './slidetools.js';
+import { genderOf, applyVoiceOverride, edgeVoiceFor, piperPitchFor, genderLabel, FEMALE, MALE } from './voicepick.js';
 import { soundSection, migrateSound, defaultSound } from './soundpanel.js';
 
 const KEY = 'proyek-v2';
@@ -193,7 +194,7 @@ const personaDeps = {
 async function trySample(s, btn) {
   const full = cleanForSpeech(narrationFor(s)) || 'Halo! Selamat datang di pelatihan keselamatan kerja.';
   const t = full.length > 140 ? `${full.slice(0, 140).replace(/\s+\S*$/, '')}.` : full;
-  const eng = s.voice?.v === 'piper' || (!s.voice?.v && engineOf() === 'piper');
+  const eng = (s.voice?.v || '').startsWith('piper') || (!s.voice?.v && engineOf() === 'piper');
   if (eng && !(await confirmPiperDownload())) return;
   const old = [...btn.childNodes]; btn.disabled = true; btn.replaceChildren(h('span', { class: 'spinner sm' }), 'Membuat contoh…');
   try {
@@ -333,9 +334,7 @@ const clampN = (v, a, c) => Math.max(a, Math.min(c, v));
 /** Pilihan suara per slide (s.voice) menimpa pengaturan tab Suara hanya untuk slide itu. */
 function withOverride(cfg, ov) {
   if (!ov) return cfg;
-  const c = { ...cfg };
-  if (ov.v === 'piper') c.engine = 'piper';
-  else if (ov.v) { c.engine = c.engine === 'server' ? 'server' : 'edge'; c.voice = ov.v; }
+  const c = applyVoiceOverride(cfg, ov);
   if (ov.style) c.style = ov.style;
   if (ov.rate != null) c.rate = ov.rate;
   if (ov.pitch != null) c.pitch = ov.pitch;
@@ -350,13 +349,13 @@ async function synthesize(text, { onStatus = () => {}, onProgress = () => {} } =
   if (engine === 'server') {
     if (!cfg.url) throw new Error('Alamat server suara belum diisi. Buka tab Suara, atau pilih "Suara AI di browser".');
     onStatus('Menghubungi server…');
-    const blob = await new EdgeTTS(cfg.url).synthesize(text, { voice: cfg.voice || 'id-ID-GadisNeural', rate, pitch: pitchN * 5 });
-    return { blob, name: 'narasi.mp3', type: 'audio/mpeg', label: `MP3 · ${voiceLabel(cfg.voice)}` };
+    const blob = await new EdgeTTS(cfg.url).synthesize(text, { voice: edgeVoiceFor(cfg), rate, pitch: pitchN * 5 });
+    return { blob, name: 'narasi.mp3', type: 'audio/mpeg', label: `MP3 · ${voiceLabel(edgeVoiceFor(cfg))}` };
   }
   if (engine === 'edge') {
     try {
-      const r = await EdgeDirectTTS.synthesize(text, { voice: cfg.voice || 'id-ID-GadisNeural', rate, pitch: pitchN * 5, onStatus });
-      return { ...r, label: `MP3 · ${voiceLabel(cfg.voice)} (Microsoft)` };
+      const r = await EdgeDirectTTS.synthesize(text, { voice: edgeVoiceFor(cfg), rate, pitch: pitchN * 5, onStatus });
+      return { ...r, label: `MP3 · ${voiceLabel(edgeVoiceFor(cfg))} (Microsoft)` };
     } catch (e) {
       console.warn(e);
       if (!override) setTtsCfg({ engine: 'piper' });
@@ -364,8 +363,8 @@ async function synthesize(text, { onStatus = () => {}, onProgress = () => {} } =
       if (!(await confirmPiperDownload())) throw new Error('Dibatalkan.');
     }
   }
-  const r = await PiperTTS.synthesize(text, { speed: 1 + rate / 100, pitch: pitchN, noise: st.noise, onStatus, onProgress });
-  return { ...r, label: `${r.type === 'audio/wav' ? 'WAV' : 'MP3'} · Suara AI` };
+  const r = await PiperTTS.synthesize(text, { speed: 1 + rate / 100, pitch: piperPitchFor(cfg, pitchN), noise: st.noise, onStatus, onProgress });
+  return { ...r, label: `${r.type === 'audio/wav' ? 'WAV' : 'MP3'} · Suara AI ${genderLabel(cfg)}` };
 }
 
 async function makeMp3(s, btn, { quiet = false } = {}) {
@@ -588,7 +587,13 @@ function renderSuara() {
     h('span', {}, h('b', {}, name, k === 'piper' ? h('em', { class: 'tag' }, 'tanpa server') : null), h('small', {}, desc)))));
 
   const voiceSel = h('select', { 'aria-label': 'Suara MP3' }, [['id-ID-GadisNeural', 'Gadis — perempuan'], ['id-ID-ArdiNeural', 'Ardi — laki-laki']].map(([v, l]) => h('option', { value: v, selected: (cfg.voice || 'id-ID-GadisNeural') === v }, l)));
-  voiceSel.onchange = () => setTtsCfg({ voice: voiceSel.value });
+  voiceSel.onchange = () => setTtsCfg({ voice: voiceSel.value, gender: voiceSel.value === MALE ? 'laki' : voiceSel.value === FEMALE ? 'perempuan' : genderOf(ttsCfg()) });
+  const gSeg = h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Jenis suara' }, [['perempuan', 'Perempuan'], ['laki', 'Laki-laki']].map(([v, l]) =>
+    h('label', {}, h('input', { type: 'radio', name: 'jenisSuara', value: v, checked: genderOf(cfg) === v, onchange: () => {
+      const patch = { gender: v }; const cur = ttsCfg().voice;
+      if (!cur || cur === FEMALE || cur === MALE) patch.voice = v === 'laki' ? MALE : FEMALE;
+      setTtsCfg(patch); renderSuara(); renderEditor();
+    } }), h('span', {}, l))));
   const rateOut = h('b', { class: 'big-num' }, `${(+cfg.rate || 0) > 0 ? '+' : ''}${+cfg.rate || 0}%`);
   const rateIn = h('input', { type: 'range', min: -30, max: 30, step: 5, value: cfg.rate || 0, 'aria-label': 'Kecepatan bicara', oninput: (e) => { setTtsCfg({ rate: +e.target.value }); rateOut.textContent = `${+e.target.value > 0 ? '+' : ''}${e.target.value}%`; } });
 
@@ -683,7 +688,10 @@ function renderSuara() {
   panel.replaceChildren(...[
     h('h3', {}, 'Mesin suara MP3'),
     engineCards,
-    engine !== 'piper' ? field('Suara', voiceSel) : h('p', { class: 'hint' }, 'Satu suara Bahasa Indonesia (model Piper, lisensi MIT). Suara dibuat di perangkat Anda — teks tidak dikirim ke server mana pun.'),
+    field('Jenis suara', gSeg),
+    engine !== 'piper' ? field('Suara', voiceSel) : h('p', { class: 'hint' }, genderOf(cfg) === 'laki'
+      ? 'Laki-laki (suara AI di browser): memakai model Indonesia yang sama (Piper, lisensi MIT) dengan nada dan warna suara diturunkan — terdengar lebih berat, tetapi tidak sealami suara laki-laki asli. Untuk suara laki-laki paling natural, pilih mesin "Microsoft Gadis / Ardi" (Ardi).'
+      : 'Satu suara Bahasa Indonesia (model Piper, lisensi MIT). Suara dibuat di perangkat Anda — teks tidak dikirim ke server mana pun.'),
     field('Ekspresi', styleSel),
     h('div', { class: 'field' }, h('label', {}, 'Kecepatan bicara'), h('div', { class: 'row' }, rateIn, rateOut)),
     h('div', { class: 'field' }, h('label', {}, 'Nada suara (turun ↔ naik)'), h('div', { class: 'row' }, pitchIn, pitchOut)),

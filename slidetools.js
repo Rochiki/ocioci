@@ -16,7 +16,8 @@ export const VOICES = [
   ['', 'Ikut pengaturan', 'Sesuai tab Suara'],
   ['id-ID-GadisNeural', 'Gadis', 'Perempuan · Microsoft'],
   ['id-ID-ArdiNeural', 'Ardi', 'Pria · Microsoft'],
-  ['piper', 'Suara AI', 'Di browser · tanpa internet'],
+  ['piper-f', 'Suara AI · perempuan', 'Di browser · tanpa internet'],
+  ['piper-m', 'Suara AI · laki-laki', 'Di browser · nada diturunkan'],
 ];
 
 export const BUTTON_PRESETS = [
@@ -50,7 +51,7 @@ export function personaPanel(s, d) {
     const chip = (val, label, pic, extra) => h('button', { class: 'pick-chip' + (pic ? ' has-pic' : ' txt'), type: 'button', role: 'radio', 'aria-checked': String(who === val), title: extra || label,
       onclick: () => { s.who = val; d.ctx.changed(); draw(); } }, pic || null, h('span', {}, label));
     const chars = Object.entries(d.chars || {}).map(([k, c]) => chip(k, c.name, h('span', { class: 'chip-pic presenter-thumb', html: K.svg(k, true) })));
-    const vc = (s.voice?.v) || '';
+    const vc = ((s.voice?.v) === 'piper' ? 'piper-f' : (s.voice?.v)) || '';
     const voiceChips = VOICES.map(([v, name, sub]) => h('button', { class: 'pick-chip voice', type: 'button', role: 'radio', 'aria-checked': String(vc === v),
       onclick: () => { setVoice('v', v); draw(); } }, h('b', {}, name), h('small', {}, sub)));
     const sample = h('button', { class: 'btn', type: 'button' }, icon('play'), 'Coba suara');
