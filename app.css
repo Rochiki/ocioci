@@ -405,10 +405,14 @@ h3.sep { margin: 20px 0 10px; }
 /* ============================================================
    PLAYER
    ============================================================ */
-.player { display: grid; grid-template-columns: 300px minmax(0, 1fr); height: calc(100vh - 58px); height: calc(100dvh - 58px); }
-.player-side { border-right: 1px solid var(--line); background: var(--surface); padding: 16px; overflow: auto; display: flex; flex-direction: column; gap: 14px; }
-.player-main { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
-.stage { position: relative; background: #fff; min-height: 0; }
+.player { display: block; position: relative; height: calc(100vh - 58px); height: calc(100dvh - 58px); }
+.player-side { position: absolute; z-index: 30; top: 0; bottom: 0; left: 0; width: min(340px, 88vw); border-right: 1px solid var(--line); background: var(--surface); padding: 16px; overflow: auto; display: flex; flex-direction: column; gap: 14px; transform: translateX(-102%); visibility: hidden; transition: transform .22s ease, visibility 0s .22s; box-shadow: 8px 0 30px rgba(0,0,0,.18); }
+.player.info-open .player-side { transform: none; visibility: visible; transition: transform .22s ease; }
+.side-backdrop { position: absolute; inset: 0; z-index: 25; background: rgba(0,0,0,.35); }
+.side-close { align-self: flex-end; }
+.player-side .debug { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.player-main { height: 100%; min-height: 0; }
+.stage { position: relative; background: #fff; height: 100%; min-height: 0; }
 .stage iframe { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
 .stage-overlay { position: absolute; inset: 0; display: grid; place-items: center; background: var(--paper); text-align: center; padding: 24px; }
 .version-badge { display: inline-block; font-size: 12px; font-weight: 800; padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-strong); }
@@ -444,9 +448,6 @@ h3.sep { margin: 20px 0 10px; }
 .log .err { color: var(--danger); }
 .field-inline { max-width: 320px; margin: 20px auto 0; text-align: left; }
 @media (max-width: 860px) {
-  .player { grid-template-columns: 1fr; height: auto; }
-  .player-side { border-right: 0; border-bottom: 1px solid var(--line); }
-  .player-main { height: 82vh; height: 82dvh; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 

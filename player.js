@@ -10,7 +10,7 @@ const $ = (id) => document.getElementById(id);
 const els = {
   file: $('fileInput'), drop: $('dropzone'), lib: $('library'), viewUpload: $('viewUpload'), viewPlayer: $('viewPlayer'),
   title: $('courseTitle'), version: $('courseVersion'), toc: $('toc'), frame: $('frame'), overlay: $('overlay'),
-  log: $('log'), prev: $('btnPrev'), next: $('btnNext'), close: $('btnClose'), reset: $('btnReset'),
+  log: $('log'), prev: $('btnPrev'), next: $('btnNext'), close: $('btnClose'), info: $('btnInfo'), reset: $('btnReset'),
   progressBox: $('importProgress'), progressBar: document.querySelector('#importProgress .progress > div'), progressText: $('importText'),
   learner: $('learnerName'),
 };
@@ -87,7 +87,7 @@ async function openPackage(loader) {
   document.title = `${pkg.title} — Studio SCORM`;
   els.viewUpload.hidden = true;
   els.viewPlayer.hidden = false;
-  els.close.hidden = false;
+  els.close.hidden = false; els.info.hidden = false; setInfo(false);
   els.log.textContent = '';
   renderToc();
   // Lanjutkan dari SCO terakhir yang dibuka (bila ada).
@@ -213,6 +213,18 @@ function handleNav(req) {
   }
 }
 
+// ---------------------------------------------------------------- panel info (laci, tertutup secara bawaan → kursus tampil penuh)
+function setInfo(open) {
+  els.viewPlayer.classList.toggle('info-open', !!open);
+  $('sideBackdrop').hidden = !open;
+  els.info.setAttribute('aria-expanded', String(!!open));
+  if (open) $('btnSideClose').focus({ preventScroll: true });
+}
+els.info.onclick = () => setInfo(!els.viewPlayer.classList.contains('info-open'));
+$('btnSideClose').onclick = () => { setInfo(false); els.info.focus(); };
+$('sideBackdrop').onclick = () => setInfo(false);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && els.viewPlayer.classList.contains('info-open')) setInfo(false); });
+
 // ---------------------------------------------------------------- log debug
 let logCount = 0;
 function logLine(e) {
@@ -234,7 +246,7 @@ els.close.onclick = async () => {
   await blankFrame();
   if (runtime?.state === 'running') runtime.terminate('');
   runtime = null; pkg = null;
-  els.viewPlayer.hidden = true; els.viewUpload.hidden = false; els.close.hidden = true;
+  els.viewPlayer.hidden = true; els.viewUpload.hidden = false; els.close.hidden = true; els.info.hidden = true; setInfo(false);
   document.title = 'Player SCORM — Studio SCORM';
   renderLibrary();
 };

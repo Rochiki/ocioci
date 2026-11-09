@@ -21,6 +21,7 @@
       <a href="html-builder.html">HTML Creator</a>
     </nav>
     <span class="spacer"></span>
+    <button id="btnInfo" class="btn btn-ghost-light" type="button" aria-expanded="false" aria-controls="sidePanel" hidden>Info &amp; status</button>
     <button id="btnClose" class="btn btn-ghost-light" type="button" hidden>Tutup kursus</button>
     <label class="btn btn-signal" for="fileInput" style="margin:0">Buka .zip</label>
     <input id="fileInput" type="file" accept=".zip,application/zip" hidden>
@@ -45,7 +46,9 @@
   </section>
 
   <section id="viewPlayer" class="player" hidden>
-    <aside class="player-side">
+    <div id="sideBackdrop" class="side-backdrop" hidden></div>
+    <aside class="player-side" id="sidePanel" aria-label="Info kursus">
+      <button id="btnSideClose" class="btn btn-sm side-close" type="button" aria-label="Tutup panel info">Tutup ✕</button>
       <div>
         <h2 id="courseTitle" style="margin-bottom:6px"></h2>
         <span id="courseVersion" class="version-badge"></span>
@@ -62,6 +65,11 @@
         <div class="stat"><span>Total waktu</span><b id="stTime">–</b></div>
       </div>
       <button id="btnReset" class="btn btn-sm btn-danger" type="button">Hapus progres kursus ini</button>
+    
+      <details class="debug">
+        <summary>Log komunikasi SCORM (untuk pengembang)</summary>
+        <pre id="log" class="log"></pre>
+      </details>
     </aside>
     <div class="player-main">
       <div class="stage">
@@ -74,10 +82,6 @@
           </div>
         </div>
       </div>
-      <details class="debug">
-        <summary>Log komunikasi SCORM (untuk pengembang)</summary>
-        <pre id="log" class="log"></pre>
-      </details>
     </div>
   </section>
 </body>
