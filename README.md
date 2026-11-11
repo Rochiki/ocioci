@@ -72,7 +72,9 @@ Pilihan lain: **Rekam suara** sendiri di setiap slide, atau **Unggah audio**. Sl
 
 > **Catatan jujur:** jalur Microsoft (langsung maupun lewat `edge-tts`) memakai layanan suara Microsoft Edge yang **tidak resmi** — gratis dan bagus, tetapi tanpa jaminan. Audio disimpan sebagai MP3 di dalam paket, jadi kursus yang sudah jadi tetap bersuara walau layanan berubah.
 
-**Jenis suara (perempuan / laki-laki):** tab *Suara* → "Jenis suara". Microsoft & server: Gadis / Ardi. Suara AI di browser hanya punya satu model Indonesia (perempuan); versi laki-laki dibuat dengan menurunkan nada & warna suara (kurang natural dibanding Ardi). Per slide: pilih "Suara AI · perempuan/laki-laki" di kartu *Karakter & suara slide ini*. Logika di `voicepick.js`.
+**Jenis & pilihan suara:** tab *Suara* → "Jenis suara" (Perempuan / Laki-laki), lalu pilih suaranya. Mesin Microsoft & server punya **10 suara natural** (katalog di `voicepick.js`): Gadis & Ardi (Bahasa Indonesia) + 8 suara multibahasa internasional (Ava, Emma, Vivienne, Seraphina / Andrew, Brian, Remy, Florian) yang fasih membaca Bahasa Indonesia dengan sedikit logat. Suara AI di browser punya satu model Indonesia (perempuan); versi laki-lakinya = nada & warna suara diturunkan (kurang natural dibanding Ardi). Per slide: chip Gadis/Ardi/AI + dropdown "Suara Microsoft lainnya…" di kartu *Karakter & suara slide ini*.
+
+**Keandalan:** sambungan langsung ke Microsoft kini mencoba ulang otomatis sampai 3× (termasuk koreksi selisih jam perangkat — penyebab umum penolakan). Bila tetap ditolak: dicoba lewat server sendiri (bila terpasang), lalu Suara AI di browser **tanpa mengubah pengaturan mesin Anda**. "Buat MP3 untuk semua slide" melewati slide yang gagal dan berhenti hanya bila 3 slide gagal beruntun.
 
 ## 4b. Karakter presenter animasi
 

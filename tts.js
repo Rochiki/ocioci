@@ -392,8 +392,8 @@ const EDGE_GEC_VERSION = '1-143.0.3650.75';
 const xmlEsc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
 
 export class EdgeDirectTTS {
-  static async #gec() {
-    let ticks = BigInt(Math.floor(Date.now() / 1000)) + 11644473600n;
+  static async #gec(skewSec = 0) {
+    let ticks = BigInt(Math.floor(Date.now() / 1000) + skewSec) + 11644473600n;
     ticks -= ticks % 300n;
     ticks *= 10000000n;
     const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${ticks}${EDGE_TOKEN}`));
@@ -402,8 +402,8 @@ export class EdgeDirectTTS {
   static #stamp() { return `${new Date().toUTCString().replace(/,/g, '')} GMT+0000 (Coordinated Universal Time)`; }
   static #uuid() { return (crypto.randomUUID?.() || `${Date.now()}${Math.random()}`).replace(/[^a-f0-9]/gi, '').slice(0, 32).padEnd(32, '0'); }
 
-  static async #chunk(text, { voice, rate, pitch }) {
-    const url = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${EDGE_TOKEN}&Sec-MS-GEC=${await EdgeDirectTTS.#gec()}&Sec-MS-GEC-Version=${EDGE_GEC_VERSION}&ConnectionId=${EdgeDirectTTS.#uuid()}`;
+  static async #chunk(text, { voice, rate, pitch }, skewSec = 0) {
+    const url = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${EDGE_TOKEN}&Sec-MS-GEC=${await EdgeDirectTTS.#gec(skewSec)}&Sec-MS-GEC-Version=${EDGE_GEC_VERSION}&ConnectionId=${EdgeDirectTTS.#uuid()}`;
     return new Promise((resolve, reject) => {
       const ws = new WebSocket(url);
       ws.binaryType = 'arraybuffer';
@@ -444,9 +444,23 @@ export class EdgeDirectTTS {
     for (const s of splitSentences(clean, 400)) { if ((cur + ' ' + s).length > 1500 && cur) { chunks.push(cur); cur = s; } else cur = cur ? `${cur} ${s}` : s; }
     if (cur) chunks.push(cur);
     const parts = [];
+    const SKEWS = [0, 300, -300]; // percobaan ulang dengan jam digeser ±5 menit (jam perangkat yang meleset membuat Microsoft menolak)
     for (const [i, c] of chunks.entries()) {
       onStatus(chunks.length > 1 ? `Menghubungi Microsoft ${i + 1}/${chunks.length}…` : 'Menghubungi Microsoft…');
-      parts.push(...await EdgeDirectTTS.#chunk(c, { voice, rate, pitch }));
+      let lastErr = null;
+      for (const [attempt, skew] of SKEWS.entries()) {
+        try {
+          parts.push(...await EdgeDirectTTS.#chunk(c, { voice, rate, pitch }, skew));
+          lastErr = null; break;
+        } catch (e) {
+          lastErr = e;
+          if (attempt < SKEWS.length - 1) {
+            onStatus(`Microsoft menolak — mencoba lagi (${attempt + 2}/${SKEWS.length})…`);
+            await new Promise((r) => setTimeout(r, 600));
+          }
+        }
+      }
+      if (lastErr) throw lastErr;
     }
     if (!parts.length) throw new Error('Tidak ada suara yang diterima dari Microsoft.');
     return { blob: new Blob(parts, { type: 'audio/mpeg' }), name: 'narasi.mp3', type: 'audio/mpeg' };

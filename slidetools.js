@@ -6,6 +6,7 @@
 //   s.buttons [{action,label,target,url,title,text}]
 // ============================================================
 import { musicPicker } from './musiklib.js';
+import { VOICE_CATALOG } from './voicepick.js';
 import { h as h0, icon } from './ui.js';
 import { field } from './editors.js';
 
@@ -71,7 +72,15 @@ export function personaPanel(s, d) {
           chip('none', 'Tanpa karakter'), ...chars),
         !d.project.presenter?.on && !who ? h('div', { class: 'hint' }, 'Kursus belum memakai karakter. Pilih karakter di sini untuk menampilkannya hanya di slide ini.') : null),
       h('div', { class: 'field' }, h('label', {}, 'Suara narasi'),
-        h('div', { class: 'chip-row voices', role: 'radiogroup', 'aria-label': 'Suara slide' }, ...voiceChips)),
+        h('div', { class: 'chip-row voices', role: 'radiogroup', 'aria-label': 'Suara slide' }, ...voiceChips),
+        (() => {
+          const sel = h('select', { class: 'voice-more', 'aria-label': 'Suara Microsoft lainnya' },
+            h('option', { value: '' }, 'Suara Microsoft lainnya…'),
+            ...['perempuan', 'laki'].map((g) => h('optgroup', { label: g === 'laki' ? 'Laki-laki' : 'Perempuan' },
+              ...VOICE_CATALOG.filter((v) => v.gender === g).map((v) => h('option', { value: v.id, selected: vc === v.id }, `${v.nama} — ${v.ket}${v.asal === 'Internasional' ? ' · internasional' : ''}`)))));
+          sel.onchange = () => { if (sel.value) { setVoice('v', sel.value); draw(); } };
+          return sel;
+        })()),
       h('details', { class: 'mini', open: !!(s.voice?.style || s.voice?.rate != null || s.voice?.pitch != null) },
         h('summary', {}, 'Atur ekspresi, kecepatan & nada'),
         h('div', { class: 'look-body' }, field('Ekspresi', styleSel), field('Kecepatan', rng('rate', -50, 50, '%')), field('Nada', rng('pitch', -10, 10, '')))),

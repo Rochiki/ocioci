@@ -546,3 +546,5 @@ details.look summary { display: flex; align-items: center; gap: 6px; }
 .sfx-row { display: grid; grid-template-columns: 1fr 150px auto; gap: 8px; align-items: center; padding: 5px 0; font-size: 13.5px; border-bottom: 1px solid var(--line); }
 .sfx-row:last-child { border: 0; }
 .sound-sec .segmented { margin-bottom: 10px; }
+
+.voice-more { margin-top: 8px; width: 100%; max-width: 420px; }

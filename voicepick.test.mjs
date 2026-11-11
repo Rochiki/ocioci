@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { genderOf, applyVoiceOverride, edgeVoiceFor, piperPitchFor, FEMALE, MALE, MALE_PITCH_SHIFT } from './voicepick.js';
+import { genderOf, applyVoiceOverride, edgeVoiceFor, piperPitchFor, voicesFor, voiceInfo, FEMALE, MALE, MALE_PITCH_SHIFT } from './voicepick.js';
 
 test('jenis suara default perempuan; mengikuti pilihan eksplisit atau nama suara', () => {
   assert.equal(genderOf({}), 'perempuan');
@@ -29,4 +29,21 @@ test('pilihan per slide: piper (lama) = perempuan, piper-m = laki-laki, Ardi/Gad
   assert.deepEqual([a.engine, a.voice, a.gender], ['edge', MALE, 'laki']);
   assert.equal(applyVoiceOverride({ engine: 'server', url: 'x' }, { v: FEMALE }).engine, 'server');
   assert.deepEqual(applyVoiceOverride(base, null), base);
+});
+
+test('katalog: minimal 5 suara per jenis, Gadis & Ardi suara Indonesia', () => {
+  assert.ok(voicesFor('perempuan').length >= 5 && voicesFor('laki').length >= 5);
+  assert.equal(voiceInfo(FEMALE).asal, 'Indonesia');
+  assert.equal(voiceInfo(MALE).asal, 'Indonesia');
+  assert.ok(voicesFor('laki').some((v) => v.asal === 'Internasional'));
+});
+
+test('suara internasional: ikut katalog untuk jenis & penggantian', () => {
+  const a = applyVoiceOverride({ engine: 'piper' }, { v: 'en-US-AndrewMultilingualNeural' });
+  assert.deepEqual([a.engine, a.gender], ['edge', 'laki']);
+  assert.equal(genderOf({ voice: 'en-US-AvaMultilingualNeural' }), 'perempuan');
+  // jenis suara diganti ke laki-laki tapi suara masih Ava → pakai suara standar laki-laki
+  assert.equal(edgeVoiceFor({ gender: 'laki', voice: 'en-US-AvaMultilingualNeural' }), MALE);
+  assert.equal(edgeVoiceFor({ gender: 'laki', voice: 'en-US-AndrewMultilingualNeural' }), 'en-US-AndrewMultilingualNeural');
+  assert.equal(edgeVoiceFor({}), FEMALE);
 });

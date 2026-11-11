@@ -10,7 +10,7 @@ import { importFiles, ACCEPT_ALL, isGenericName } from './importers.js';
 import { BrowserTTS, Recorder, EdgeTTS, PiperTTS, EdgeDirectTTS, PIPER_VOICES, cleanForSpeech, normalizeServerUrl } from './tts.js';
 import { openCropper } from './crop.js';
 import { personaPanel, buttonsPanel, slideMusicPanel } from './slidetools.js';
-import { genderOf, applyVoiceOverride, edgeVoiceFor, piperPitchFor, genderLabel, FEMALE, MALE } from './voicepick.js';
+import { genderOf, applyVoiceOverride, edgeVoiceFor, piperPitchFor, genderLabel, voicesFor, voiceInfo, defaultVoice, FEMALE, MALE } from './voicepick.js';
 import { soundSection, migrateSound, defaultSound } from './soundpanel.js';
 
 const KEY = 'proyek-v2';
@@ -358,8 +358,14 @@ async function synthesize(text, { onStatus = () => {}, onProgress = () => {} } =
       return { ...r, label: `MP3 · ${voiceLabel(edgeVoiceFor(cfg))} (Microsoft)` };
     } catch (e) {
       console.warn(e);
-      if (!override) setTtsCfg({ engine: 'piper' });
-      toast(`${e.message} Beralih otomatis ke "Suara AI di browser".`, 'error');
+      if (cfg.url) {
+        try {
+          onStatus('Microsoft menolak — mencoba lewat server Anda…');
+          const blob = await new EdgeTTS(cfg.url).synthesize(text, { voice: edgeVoiceFor(cfg), rate, pitch: pitchN * 5 });
+          return { blob, name: 'narasi.mp3', type: 'audio/mpeg', label: `MP3 · ${voiceLabel(edgeVoiceFor(cfg))}` };
+        } catch (e2) { console.warn(e2); }
+      }
+      toast(`${e.message} Narasi ini dibuat dengan "Suara AI di browser" (${genderLabel(cfg)}) — pengaturan Microsoft Anda tidak diubah, coba lagi nanti.`, 'error');
       if (!(await confirmPiperDownload())) throw new Error('Dibatalkan.');
     }
   }
@@ -579,19 +585,26 @@ function renderSuara() {
   // --- pilihan mesin MP3
   const engines = [
     ['piper', 'Suara AI di browser', 'Disarankan. Gratis, tanpa server, tanpa daftar akun. Unduhan pertama ±90 MB lalu tersimpan.'],
-    ['edge', 'Microsoft Gadis / Ardi', 'Suara paling natural, langsung dari browser (eksperimental). Bila ditolak Microsoft, otomatis pindah ke Suara AI.'],
-    ['server', 'Server sendiri (Hugging Face)', 'Gadis / Ardi lewat server gratis yang Anda pasang sendiri. Paling stabil untuk Gadis/Ardi.'],
+    ['edge', 'Microsoft — Gadis, Ardi & internasional', 'Suara paling natural: 5 pria & 5 wanita. Langsung dari browser; bila sesekali ditolak Microsoft, aplikasi mencoba ulang otomatis.'],
+    ['server', 'Server sendiri (Hugging Face)', 'Suara Microsoft yang sama lewat server gratis yang Anda pasang sendiri. Paling stabil.'],
   ];
   const engineCards = h('div', { class: 'engine-list', role: 'radiogroup', 'aria-label': 'Mesin suara MP3' }, engines.map(([k, name, desc]) => h('label', { class: 'engine-card' },
     h('input', { type: 'radio', name: 'engine', value: k, checked: engine === k, onchange: () => { setTtsCfg({ engine: k }); renderSuara(); renderEditor(); } }),
     h('span', {}, h('b', {}, name, k === 'piper' ? h('em', { class: 'tag' }, 'tanpa server') : null), h('small', {}, desc)))));
 
-  const voiceSel = h('select', { 'aria-label': 'Suara MP3' }, [['id-ID-GadisNeural', 'Gadis — perempuan'], ['id-ID-ArdiNeural', 'Ardi — laki-laki']].map(([v, l]) => h('option', { value: v, selected: (cfg.voice || 'id-ID-GadisNeural') === v }, l)));
-  voiceSel.onchange = () => setTtsCfg({ voice: voiceSel.value, gender: voiceSel.value === MALE ? 'laki' : voiceSel.value === FEMALE ? 'perempuan' : genderOf(ttsCfg()) });
+  const gNow = genderOf(cfg);
+  const selVoice = edgeVoiceFor(cfg);
+  const vGroup = (asal) => {
+    const opts = voicesFor(gNow).filter((v) => v.asal === asal).map((v) => h('option', { value: v.id, selected: selVoice === v.id }, `${v.nama} — ${v.ket}`));
+    return opts.length ? h('optgroup', { label: asal === 'Indonesia' ? 'Bahasa Indonesia' : 'Internasional (fasih ber-Bahasa Indonesia, sedikit logat)' }, ...opts) : null;
+  };
+  const voiceSel = h('select', { 'aria-label': 'Suara MP3' }, ...[vGroup('Indonesia'), vGroup('Internasional')].filter(Boolean));
+  if (voiceInfo(selVoice)?.gender !== gNow && cfg.voice && !voiceInfo(cfg.voice)) voiceSel.append(h('option', { value: cfg.voice, selected: true }, voiceLabel(cfg.voice)));
+  voiceSel.onchange = () => setTtsCfg({ voice: voiceSel.value, gender: voiceInfo(voiceSel.value)?.gender || genderOf(ttsCfg()) });
   const gSeg = h('div', { class: 'segmented', role: 'radiogroup', 'aria-label': 'Jenis suara' }, [['perempuan', 'Perempuan'], ['laki', 'Laki-laki']].map(([v, l]) =>
     h('label', {}, h('input', { type: 'radio', name: 'jenisSuara', value: v, checked: genderOf(cfg) === v, onchange: () => {
-      const patch = { gender: v }; const cur = ttsCfg().voice;
-      if (!cur || cur === FEMALE || cur === MALE) patch.voice = v === 'laki' ? MALE : FEMALE;
+      const patch = { gender: v }; const cur = voiceInfo(ttsCfg().voice);
+      if (!cur || cur.gender !== v) patch.voice = defaultVoice(v);
       setTtsCfg(patch); renderSuara(); renderEditor();
     } }), h('span', {}, l))));
   const rateOut = h('b', { class: 'big-num' }, `${(+cfg.rate || 0) > 0 ? '+' : ''}${+cfg.rate || 0}%`);
@@ -628,14 +641,14 @@ function renderSuara() {
     if (!list.length) return toast('Semua slide sudah punya audio.');
     if (engineOf() === 'piper' && !(await confirmPiperDownload())) return;
     allBtn.disabled = true; allProg.hidden = false; allProg.firstChild.style.width = '0%';
-    let ok = 0;
+    let ok = 0, failStreak = 0;
     for (const [i, s] of list.entries()) {
       allBtn.replaceChildren(h('span', { class: 'spinner sm' }), `Slide ${i + 1} dari ${list.length}…`);
-      if (!(await makeMp3(s, null, { quiet: true }))) break;
-      ok++; allProg.firstChild.style.width = `${(ok / list.length) * 100}%`;
+      if (await makeMp3(s, null, { quiet: true })) { ok++; failStreak = 0; } else { failStreak++; if (failStreak >= 3) break; } // slide gagal dilewati; berhenti hanya bila 3 gagal beruntun
+      allProg.firstChild.style.width = `${((i + 1) / list.length) * 100}%`;
     }
     allBtn.disabled = false; allBtn.replaceChildren(icon('sparkle'), 'Buat MP3 untuk semua slide');
-    toast(`${ok} dari ${list.length} slide sudah punya MP3.`, ok === list.length ? 'ok' : 'error'); renderEditor();
+    toast(ok === list.length ? `Selesai — ${ok} slide punya MP3.` : `${ok} dari ${list.length} slide berhasil. Slide yang gagal bisa dibuat ulang satu per satu, atau tekan tombol ini lagi (pilih "hanya yang belum punya audio").`, ok === list.length ? 'ok' : 'error'); renderEditor();
   };
 
   // --- server sendiri
@@ -689,7 +702,7 @@ function renderSuara() {
     h('h3', {}, 'Mesin suara MP3'),
     engineCards,
     field('Jenis suara', gSeg),
-    engine !== 'piper' ? field('Suara', voiceSel) : h('p', { class: 'hint' }, genderOf(cfg) === 'laki'
+    engine !== 'piper' ? field('Suara', voiceSel, 'Suara internasional adalah suara multibahasa Microsoft — sangat natural membaca Bahasa Indonesia, kadang dengan sedikit logat. Coba dengarkan dulu dengan tombol di bawah.') : h('p', { class: 'hint' }, genderOf(cfg) === 'laki'
       ? 'Laki-laki (suara AI di browser): memakai model Indonesia yang sama (Piper, lisensi MIT) dengan nada dan warna suara diturunkan — terdengar lebih berat, tetapi tidak sealami suara laki-laki asli. Untuk suara laki-laki paling natural, pilih mesin "Microsoft Gadis / Ardi" (Ardi).'
       : 'Satu suara Bahasa Indonesia (model Piper, lisensi MIT). Suara dibuat di perangkat Anda — teks tidak dikirim ke server mana pun.'),
     field('Ekspresi', styleSel),
