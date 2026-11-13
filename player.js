@@ -5,6 +5,7 @@ import { ScormRuntime } from './scorm-runtime.js';
 import { importPackage, openStoredPackage, removePackage, listLibrary, ensureServiceWorker, packageUrl } from './package-store.js';
 import { kv } from './store.js';
 import { formatBytes, formatDuration, parseScorm12Time, parseScorm2004Time } from './util.js';
+import { initTour } from './tur.js';
 
 const $ = (id) => document.getElementById(id);
 const els = {
@@ -288,3 +289,11 @@ if (location.hash === '#pratinjau') {
     els.progressBox.hidden = true;
   });
 }
+
+
+// tur pengenalan Player
+initTour({ page: 'player', steps: [
+  { judul: 'Pemutar SCORM 👋', teks: 'Halaman ini untuk memutar & mencoba file SCORM (.zip) tanpa perlu LMS — nilai dan progres tersimpan di perangkat ini.' },
+  { el: '#dropzone', judul: 'Masukkan file di sini', teks: 'Seret file .zip ke kotak ini, atau ketuk untuk memilih dari komputer/HP Anda.' },
+  { el: '#learnerName', judul: 'Nama peserta', teks: 'Tulis nama dulu bila ingin tercantum di sertifikat kursus.' },
+] });

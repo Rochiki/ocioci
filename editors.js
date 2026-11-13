@@ -107,7 +107,7 @@ export function assetPicker(obj, key, ctx, { kind = 'image', label = 'Pilih file
     } else {
       box.append(h('button', { class: 'asset-empty', type: 'button', onclick: () => input.click() },
         icon(kind === 'zip' ? 'zip' : kind === 'audio' ? 'sound' : kind), h('b', {}, label),
-        h('small', {}, { image: 'PNG, JPG, GIF, WebP, SVG — atau seret file ke sini', video: 'MP4/WebM/MOV — atau seret file ke sini', audio: 'MP3, M4A, WAV', zip: 'File .zip berisi index.html' }[kind])));
+        h('small', {}, { image: 'Ketuk untuk pilih dari komputer/HP, atau seret & lepas gambar ke kotak ini. Gambar otomatis menyesuaikan layout.', video: 'Ketuk untuk pilih file, atau seret & lepas MP4/WebM/MOV ke kotak ini', audio: 'MP3, M4A, WAV', zip: 'File .zip berisi index.html' }[kind])));
     }
     box.append(input);
   };
@@ -115,12 +115,60 @@ export function assetPicker(obj, key, ctx, { kind = 'image', label = 'Pilih file
   return box;
 }
 
+
+// ------------------------------------------------------------ editor teks ramah awam
+/** Simbol yang sering dipakai di materi pembelajaran & K3 — sekali ketuk langsung masuk. */
+const SYMBOLS = ['💡', '⚠️', '🎯', '✅', '❌', '❗', '📌', '➡️', '👍', '🦺', '⛑️', '👷', '🧤', '🥽', '🧯', '🔥', '⚡', '🚧', '🛑', '☎️', '🏥', '♻️', '💪', '😀'];
+
+/**
+ * Textarea markdown dengan toolbar format sederhana (Tebal, Miring, Poin, Simbol).
+ * Tidak perlu hafal tanda ** atau "- " — cukup sorot teks lalu ketuk tombolnya.
+ */
+export function richText(obj, key, ctx, opts = {}) {
+  const ta = text(obj, key, ctx, { multiline: true, ...opts });
+  const fire = () => { ta.dispatchEvent(new Event('input', { bubbles: true })); ta.focus(); };
+  const wrap = (mark, contoh) => {
+    const s = ta.selectionStart, e = ta.selectionEnd;
+    const sel = ta.value.slice(s, e) || contoh;
+    ta.setRangeText(mark + sel + mark, s, e, 'select');
+    fire();
+  };
+  const bullets = () => {
+    const v = ta.value;
+    const s0 = v.lastIndexOf('\n', Math.max(0, ta.selectionStart - 1)) + 1;
+    let e0 = v.indexOf('\n', ta.selectionEnd); if (e0 < 0) e0 = v.length;
+    const lines = v.slice(s0, e0).split('\n');
+    const allOn = lines.every((l) => /^\s*-\s+/.test(l) || !l.trim());
+    const out = lines.map((l) => (!l.trim() ? l : allOn ? l.replace(/^\s*-\s+/, '') : (/^\s*-\s+/.test(l) ? l : `- ${l}`))).join('\n');
+    ta.setRangeText(out || '- ', s0, e0, 'select');
+    fire();
+  };
+  const insertAtCursor = (str) => { ta.setRangeText(str, ta.selectionStart, ta.selectionEnd, 'end'); fire(); };
+
+  const pop = h('div', { class: 'sym-pop', role: 'menu', 'aria-label': 'Pilih simbol', hidden: true },
+    ...SYMBOLS.map((sym) => h('button', { type: 'button', class: 'sym', role: 'menuitem', 'aria-label': `Sisipkan ${sym}`, onclick: () => { insertAtCursor(sym + ' '); } }, sym)));
+  const symBtn = h('button', { type: 'button', class: 'tool-btn', 'aria-haspopup': 'true', 'aria-expanded': 'false', title: 'Sisipkan simbol', onclick: () => {
+    pop.hidden = !pop.hidden; symBtn.setAttribute('aria-expanded', String(!pop.hidden));
+  } }, '😀', h('span', { class: 'tool-label' }, 'Simbol'));
+  document.addEventListener('click', (e) => { if (!pop.hidden && !pop.contains(e.target) && e.target !== symBtn && !symBtn.contains(e.target)) { pop.hidden = true; symBtn.setAttribute('aria-expanded', 'false'); } });
+
+  const tool = (label, title, fn, cls = '') => h('button', { type: 'button', class: 'tool-btn', title, onclick: fn }, h('span', { class: `tool-glyph ${cls}` }, label));
+  return h('div', { class: 'richtext' },
+    h('div', { class: 'mini-toolbar', role: 'toolbar', 'aria-label': 'Format teks' },
+      tool('B', 'Tebal — sorot teks lalu ketuk', () => wrap('**', 'teks tebal'), 'g-b'),
+      tool('I', 'Miring — sorot teks lalu ketuk', () => wrap('*', 'teks miring'), 'g-i'),
+      tool('• Poin', 'Jadikan daftar poin', bullets),
+      h('span', { class: 'tool-sep', 'aria-hidden': 'true' }),
+      h('span', { class: 'sym-wrap' }, symBtn, pop)),
+    ta);
+}
+
 // ------------------------------------------------------------ penyunting per jenis
 const E = {};
 
 E.content = (s, ctx) => [
-  field('Isi materi', text(s, 'body', ctx, { multiline: true, rows: 10, placeholder: 'Tulis materi di sini…' }),
-    'Format: baris kosong = paragraf baru · <b>- </b> = poin · <b>1. </b> = nomor · <b>**tebal**</b> · <b>## </b> = subjudul'),
+  field('Isi materi', richText(s, 'body', ctx, { rows: 10, placeholder: 'Tulis materi di sini…' }),
+    'Sorot teks lalu ketuk <b>B</b> (tebal) / <b>I</b> (miring), atau ketuk <b>• Poin</b> untuk daftar. Baris kosong = paragraf baru · <b>1. </b> = nomor · <b>## </b> = subjudul'),
   h('div', { class: 'field' }, h('label', {}, 'Gambar pendukung (opsional)'), assetPicker(s, 'image', ctx, { kind: 'image', label: 'Tambah gambar / GIF', maxMB: 15, onSet: () => ctx.rerender() })),
   s.image ? h('div', { class: 'field' }, h('label', {}, 'Tata letak'), segmented(s, 'layout', ctx, [['atas', 'Gambar di atas'], ['kiri', 'Gambar kiri'], ['kanan', 'Gambar kanan'], ['latar', 'Gambar latar']])) : null,
   s.image ? field('Teks alternatif gambar', text(s, 'imageAlt', ctx, { placeholder: 'Jelaskan isi gambar untuk pembaca layar' })) : null,

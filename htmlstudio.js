@@ -5,6 +5,7 @@
 import { h, icon, toast, formatBytes } from './ui.js';
 import { buildHtml, defaultProject, SFX_LIST, TARGETS, EVENTS } from './htmlinject.js';
 import { analyze, autofix } from './htmllint.js';
+import { initTour } from './tur.js';
 import { musicPicker, loadCatalog, titleOf } from './musiklib.js';
 import { kv } from './store.js';
 
@@ -59,6 +60,7 @@ function persist() {
 }
 function changed({ now = false } = {}) {
   persist();
+  if (typeof updateCta === 'function') updateCta();
   clearTimeout(timer);
   timer = setTimeout(refresh, now ? 0 : 600);
 }
@@ -297,6 +299,16 @@ async function exportHtml() {
   } catch (e) { toast(e.message, 'error'); }
 }
 $('btnExport').onclick = exportHtml;
+// tombol unduh dimatikan dengan penjelasan ramah bila kode masih kosong
+function updateCta() {
+  const b = $('btnExport'); if (!b) return;
+  let w = b.parentElement;
+  if (!w?.classList.contains('tipwrap')) { w = document.createElement('span'); w.className = 'tipwrap'; b.replaceWith(w); w.append(b); }
+  const kosong = !String(P.src || '').trim();
+  b.disabled = kosong;
+  if (kosong) w.dataset.tip = 'Tempel dulu kode HTML-nya di panel 1 ya 😊'; else delete w.dataset.tip;
+}
+updateCta();
 $('btnSave').onclick = () => {
   const blob = new Blob([JSON.stringify(P)], { type: 'application/json' });
   const a = h('a', { href: URL.createObjectURL(blob), download: `${dlName().replace(/\.html$/, '')}.htmlproject.json` }); document.body.append(a); a.click(); a.remove();
@@ -318,3 +330,12 @@ document.addEventListener('drop', (e) => { const f = e.dataTransfer?.files?.[0];
   try { catalog = await loadCatalog(BASE); } catch { /* pustaka opsional */ }
   render(); refresh(); setSaved('');
 })();
+
+
+// tur pengenalan HTML Creator
+initTour({ page: 'html', steps: [
+  { judul: 'HTML Creator 👋', teks: 'Tempel kode HTML apa pun (mis. buatan AI), lalu percantik dengan layar sambutan, musik latar, dan efek suara — hasilnya tetap satu file .html.' },
+  { el: '.hc-edit', judul: 'Panel pengaturan', teks: 'Mulai dari panel 1: tempel kode HTML. Ada pemeriksa kode otomatis — kalau ada yang salah, ketuk "Perbaiki otomatis".' },
+  { el: '#frameWrap', judul: 'Pratinjau langsung', teks: 'Setiap perubahan langsung terlihat di sini.' },
+  { el: '#btnExport', judul: 'Unduh hasilnya', teks: 'Ketuk tombol oranye ini untuk mengunduh satu file .html yang siap dipakai di mana saja.' },
+] });

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0f3d2e">
+  <meta name="theme-color" content="#23282e">
   <title>Studio SCORM — buat & putar e-learning SCORM</title>
   <meta name="description" content="Aplikasi open-source berbahasa Indonesia untuk membuat kursus SCORM interaktif (materi, video, kuis, kartu balik, cari bahaya) dengan narasi suara, dan memutar paket SCORM di browser.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,6 +14,7 @@
     import { icon } from './ui.js';
     document.querySelectorAll('.ic-slot[data-icon]').forEach((el) => el.replaceWith(icon(el.dataset.icon)));
   </script>
+  <script type="module" src="tur-index.js" defer></script>
 </head>
 <body class="home">
   <header class="topbar">
@@ -31,7 +32,7 @@
         <h1>Materi K3 jadi kursus <span class="hl">interaktif</span>, siap masuk LMS.</h1>
         <p class="lead">Impor PowerPoint atau PDF, tambahkan video, kuis, kartu balik, dan permainan "cari bahaya", beri narasi suara — lalu unduh sebagai paket SCORM untuk Moodle atau LMS lain. Gratis, berjalan di browser.</p>
         <div class="row">
-          <a class="btn btn-signal" href="builder.html"><span class="ic-slot" data-icon="sparkle"></span>Buat kursus</a>
+          <a class="btn btn-signal nudge" href="builder.html"><span class="ic-slot" data-icon="sparkle"></span>Buat kursus</a>
           <a class="btn btn-ghost-light" href="player.html"><span class="ic-slot" data-icon="play"></span>Putar file SCORM</a>
           <a class="btn btn-ghost-light" href="html-builder.html"><span class="ic-slot" data-icon="html"></span>HTML Creator</a>
         </div>

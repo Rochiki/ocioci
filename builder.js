@@ -11,6 +11,7 @@ import { BrowserTTS, Recorder, EdgeTTS, PiperTTS, EdgeDirectTTS, PIPER_VOICES, c
 import { openCropper } from './crop.js';
 import { personaPanel, buttonsPanel, slideMusicPanel } from './slidetools.js';
 import { genderOf, applyVoiceOverride, edgeVoiceFor, piperPitchFor, genderLabel, voicesFor, voiceInfo, defaultVoice, FEMALE, MALE } from './voicepick.js';
+import { initTour } from './tur.js';
 import { soundSection, migrateSound, defaultSound } from './soundpanel.js';
 
 const KEY = 'proyek-v2';
@@ -86,8 +87,22 @@ function save() {
 }
 
 // Objek yang dipakai semua penyunting untuk memberi tahu ada perubahan.
+// Tombol besar dimatikan dengan penjelasan ramah bila materi belum siap.
+function wrapTip(btn) {
+  if (btn.parentElement?.classList.contains('tipwrap')) return btn.parentElement;
+  const w = h('span', { class: 'tipwrap' });
+  btn.replaceWith(w); w.append(btn);
+  return w;
+}
+function updateCta() {
+  const build = $('btnBuild'), prev = $('btnPreviewFull');
+  if (!project || !build || !prev) return;
+  const tip = !project.slides.length ? 'Tambah dulu minimal 1 slide ya 😊' : !String(project.title || '').trim() ? 'Isi dulu judul kursus di tab Atur ya 😊' : '';
+  for (const b of [build, prev]) { const w = wrapTip(b); b.disabled = !!tip; if (tip) w.dataset.tip = tip; else delete w.dataset.tip; }
+}
+
 const ctx = {
-  changed(opts = {}) { save(); schedulePreview(); if (opts.list) renderList(); },
+  changed(opts = {}) { save(); schedulePreview(); updateCta(); if (opts.list) renderList(); },
   rerender() { renderEditor(); schedulePreview(); renderList(); },
 };
 
@@ -502,7 +517,12 @@ function renderGaya() {
   panel.replaceChildren(
     h('h3', {}, 'Tema warna'), presets,
     h('div', { class: 'row wrap' }, color('accent', 'Warna utama'), color('accent2', 'Warna aksen'), color('bg', 'Latar')),
-    h('div', { class: 'field' }, h('label', {}, 'Gaya huruf'), segmented(p.theme, 'font', ctx, [['modern', 'Modern'], ['klasik', 'Klasik'], ['bulat', 'Bulat']])),
+    h('div', { class: 'field' }, h('label', {}, 'Gaya huruf'), (() => {
+      const FONTS = [['modern', 'Modern — bawaan perangkat'], ['poppins', 'Poppins — tegas & kekinian'], ['opensans', 'Open Sans — bersih & mudah dibaca'], ['quicksand', 'Quicksand — bulat & ceria'], ['klasik', 'Klasik — berkait (serif)'], ['bulat', 'Bulat — bawaan perangkat']];
+      const sel = h('select', { 'aria-label': 'Gaya huruf' }, FONTS.map(([v, l]) => h('option', { value: v, selected: (p.theme.font || 'modern') === v }, l)));
+      sel.onchange = () => { p.theme.font = sel.value; ctx.changed(); };
+      return sel;
+    })(), h('div', { class: 'hint' }, 'Poppins, Open Sans, dan Quicksand dimuat otomatis saat kursus dibuka online; bila peserta offline, dipakai huruf serupa bawaan perangkat.')),
     h('div', { class: 'field' }, h('label', {}, 'Transisi antar slide'), segmented(p.theme, 'transition', ctx, [['geser', 'Geser'], ['pudar', 'Pudar'], ['zoom', 'Zoom'], ['none', 'Tanpa']])),
     h('div', { class: 'field' }, h('label', {}, 'Ukuran teks bawaan'), segmented(p, 'textSize', ctx, [['auto', 'Pas layar'], ['normal', 'Normal'], ['besar', 'Besar'], ['sangat', 'Sangat besar']]),
       h('div', { class: 'hint' }, '"Pas layar" = teks slide materi diperbesar otomatis sampai memenuhi layar, seperti AutoFit di PowerPoint. Bisa diubah per slide.')),
@@ -903,6 +923,17 @@ function welcome() {
 // ================================================================ mulai
 (async function init() {
   fillIcons();
+updateCta();
+
+// tur pengenalan untuk pengguna baru (bisa diulang lewat tombol Bantuan)
+initTour({ page: 'builder', steps: [
+  { judul: 'Selamat datang! 👋', teks: 'Ini Studio SCORM — tempat membuat materi e-learning tanpa perlu keahlian teknis. Yuk kenalan dengan 6 bagian penting, cuma 1 menit.' },
+  { el: '.pane-slides', judul: 'Daftar slide', teks: 'Materi Anda tersusun dari slide, seperti PowerPoint. Ketuk "Tambah" untuk slide baru, atau seret namanya untuk mengubah urutan.' },
+  { el: '#editor', judul: 'Tempat menulis', teks: 'Isi judul, teks, gambar, video, atau kuis di sini. Sorot teks lalu ketuk B untuk menebalkan — ada juga tombol simbol 💡 dan kotak besar untuk unggah gambar.' },
+  { el: '.pane-side', judul: 'Pratinjau & pengaturan', teks: 'Hasilnya langsung terlihat di sini. Tab "Gaya" untuk warna & huruf, "Suara" untuk narasi otomatis (ada suara pria & wanita).' },
+  { el: '#btnPreviewFull', judul: 'Coba dulu', teks: 'Ketuk ini untuk mencoba kursus persis seperti yang akan dialami peserta.' },
+  { el: '#btnBuild', judul: 'Terakhir: unduh', teks: 'Kalau sudah puas, ketuk tombol oranye ini. Anda mendapat file .zip yang tinggal diunggah ke LMS. Selesai! 🎉' },
+] });
   watchPreviewFrame();
   let stored = await kv.get(KEY).catch(() => null);
   let first = false;
@@ -912,7 +943,7 @@ function welcome() {
   }
   project = stored ? migrate(stored) : blankProject();
   currentId = project.slides[0]?.id;
-  renderList(); renderEditor(); setSideTab('lihat'); schedulePreview(true);
+  renderList(); renderEditor(); setSideTab('lihat'); schedulePreview(true); updateCta();
   $('saveState').textContent = stored ? 'Tersimpan' : '';
   if (first) welcome();
 })();

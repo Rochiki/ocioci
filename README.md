@@ -92,6 +92,15 @@ Kamus pelafalan (K3 → "K tiga", APD → "A P D", dll.) ada di `tts.js` → `PR
 
 **Layar penuh untuk gambar / video / HTML:** slide media baru otomatis tampil memenuhi halaman (tanpa judul, keterangan, dan margin; karakter presenter disembunyikan). Matikan per slide lewat saklar "Layar penuh", atau nyalakan untuk semua slide lama lewat Atur → Tampilan media. Nama file bawaan seperti `index.html` atau `video.mp4` tidak dipakai sebagai judul.
 
+## 4b2. Ramah pengguna awam
+
+- **Tur interaktif**: panduan langkah demi langkah otomatis muncul saat pertama kali membuka Beranda, Builder, Player, dan HTML Creator; bisa diulang kapan saja lewat tombol oranye **Bantuan** di kanan bawah (`tur.js`, tanpa pustaka luar).
+- **Editor teks dengan toolbar**: tombol **B** (tebal), *I* (miring), • Poin, dan panel **Simbol** (💡 ⚠️ 🎯 ✅ ❌ dsb.) — tidak perlu hafal tanda markdown.
+- **Pilihan huruf**: tab Gaya → Modern, **Poppins**, **Open Sans**, **Quicksand**, Klasik, Bulat. Huruf web dimuat saat online; offline memakai huruf serupa bawaan perangkat.
+- **Zona unggah gambar besar**: ketuk atau seret-lepas, pratinjau langsung, gambar otomatis menyesuaikan layout.
+- **Pencegahan salah langkah**: tombol besar (Unduh SCORM, Unduh .html) otomatis nonaktif dengan penjelasan ramah bila materi belum siap.
+- **Tema**: latar abu muda, kartu putih, teks charcoal, aksen oranye; mendukung mode gelap.
+
 ## 4c. Musik latar & efek suara
 
 **SCORM Builder** — tab *Suara* → "Musik latar & efek suara":
@@ -127,6 +136,7 @@ Kamus pelafalan (K3 → "K tiga", APD → "A P D", dll.) ada di `tts.js` → `PR
 | `lipsync.js` | Gerak bibir: membaca irama suara MP3 + vokal dari teks narasi (a/o = mulut lebar, i/u/e = setengah, m/b/p dan jeda = tertutup). Jalur mulut dihitung di Builder saat pratinjau/ekspor dan disimpan di paket; tanpa jalur, dihitung dari teks + durasi audio. Suara perangkat peserta: mulut mengikuti batas kata |
 | `paket-index.html`, `course.js`, `course.css`, `scorm-api.js`, `karakter.js`, `lipsync.js` | **Template** yang disalin ke setiap paket SCORM (`paket-index.html` menjadi `index.html` di dalam zip) |
 | `html-builder.html`, `htmlstudio.js`, `htmlstudio.css`, `htmlinject.js` | **HTML Creator**: menyuntikkan musik/efek/aturan ke HTML tunggal |
+| `tur.js`, `tur-index.js` | Tur interaktif + tombol Bantuan |
 | `voicepick.js` | Pilihan jenis suara perempuan/laki-laki untuk semua mesin narasi |
 | `htmllint.js` | Pemeriksa & perbaik otomatis kode HTML (HTML Creator) |
 | `sfx.js`, `soundpanel.js`, `musiklib.js`, `musik.json`, `bgm-*.mp3` | Efek suara sintetis, panel suara Builder, pemilih musik, pustaka 68 lagu CC0 |

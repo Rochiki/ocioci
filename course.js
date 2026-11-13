@@ -102,8 +102,19 @@
       modern: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
       klasik: 'Georgia, "Times New Roman", "Noto Serif", serif',
       bulat: 'ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round", "Trebuchet MS", "Segoe UI", sans-serif',
+      poppins: '"Poppins", "Plus Jakarta Sans", system-ui, "Segoe UI", sans-serif',
+      opensans: '"Open Sans", "Segoe UI", system-ui, Arial, sans-serif',
+      quicksand: '"Quicksand", ui-rounded, "Varela Round", "Trebuchet MS", sans-serif',
     };
     r.setProperty('--font', fonts[t.font] || fonts.modern);
+    // Huruf web (Poppins dll.) dimuat saat online; offline otomatis memakai huruf serupa bawaan perangkat.
+    var webfonts = { poppins: 'Poppins:wght@400;600;700;800', opensans: 'Open+Sans:wght@400;600;700;800', quicksand: 'Quicksand:wght@400;600;700' };
+    if (webfonts[t.font] && !document.getElementById('font-' + t.font)) {
+      var lk = document.createElement('link');
+      lk.id = 'font-' + t.font; lk.rel = 'stylesheet';
+      lk.href = 'https://fonts.googleapis.com/css2?family=' + webfonts[t.font] + '&display=swap';
+      document.head.appendChild(lk);
+    }
     document.documentElement.setAttribute('data-anim', reduceMotion ? 'none' : (t.transition || 'geser'));
     document.title = C.title || 'Kursus';
   }
